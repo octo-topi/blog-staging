@@ -1,0 +1,3 @@
+# Exceptions
+
+## GOTO considered harmful
