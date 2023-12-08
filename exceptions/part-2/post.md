@@ -90,34 +90,59 @@ Si les développeurs arrivent à se mettre d'accord, de préférence avec l'avis
 
 ## La règle et ses exceptions : deux exemples
 
-2 exemples:
-- traiter les cas alternatifs dans les use-case en utilisant les exceptions : DomainError
-- traiter les cas alternatifs en retournant une valeur : appel HTTP externe
+Ces deux cas pratiques concernent les cas alternatifs :
+- l'un utilise les exceptions pour les cas alternatifs dans les use-case (DomainError) en utilisant les exceptions ;
+- l'autre retourne une valeur de retour lors des appels HTTP externes.
 
 ### Cas alternatif use-cases - Lever une exception
-Détail
-https://github.com/GradedJestRisk/pix-tools/blob/master/adr/handle-alternative-scenario.md
 
+Lors du traitement d'une requête API, un chemin nominal est attendu :
+- l'utilisateur a les droits d'effectuer cet appel ;
+- les données fournies par l'utilisateur sont valides ;
+- les données existantes sont compatibles avec la demande effectuée par l'utilisateur.
 
-https://github.com/1024pix/pix/blob/dev/api/lib/application/pre-response-utils.js
-```js
-function handleDomainAndHttpErrors(
-  request,
-  h,
-  dependencies = {
-    errorManager,
+Le corps principal du traitement effectue ces vérifications, mais si l'une d'elle échoue, il initie une exception.
+Prenons l'exemple de l'ajout d'un administrateur, sur un POST de la route `/api/admin/admin-members`. 
+Plusieurs demandes peuvent être envoyées par l'IHM d'administration : connexion instable, plusieurs utilisateurs effectuant la demande en même temps. Ce n'est pas un scénario nominal, mais rien d'exceptionnel non plus. On signale simplement à l'utilisateur que sa demande ne peut aboutir, avec une réponse UnprocessableEntityError (422).
+
+Pourtant, on lève une exception dans le use-case
+```javascript
+throw new AlreadyExistingAdminMemberError();
+```
+[source](https://github.com/1024pix/pix/blob/dev/api/lib/domain/usecases/save-admin-member)
+
+```javascript
+class AlreadyExistingAdminMemberError extends Domain  Error {
+  constructor(message = 'Cet agent a déjà accès') {
+    super(message);
   }
-) {
-  const response = request.response;
-
-  if (response instanceof DomainError || response instanceof BaseHttpError) {
-    return dependencies.errorManager.handle(request, h, response);
-  }
-  return h.continue;
 }
 ```
-Pour expliciter les raisons de ce choix, [un ADR](https://blog.octo.com/architecture-decision-record/) a été rédigé, par exemple [celui-ci](https://github.com/GradedJestRisk/pix-tools/blob/master/adr/handle-alternative-scenario.md.
+[source](https://github.com/1024pix/pix/blob/dev/api/lib/domain/errors.js#L18-L18)
 
+Pourquoi ? Dans l'architecture existante, le use-case est appelé par un contrôleur HTTP, lui-même appelé par le routeur du framework, HapiJs.
+Si nous suivons les préconisations de la littérature, le use-case devrait renvoyer un code retour au contrôleur, qui se chargerait de répondre une 422. Ce n'est pas le cas ici, mais le use-case pourrait déléguer la vérification à un service : ce service devrait renvoyer un code retour au use-case, qui lui-même le renverrait au contrôleur. Cela rajouterait du code avec peu de valeur ajoutée à plusieurs endroits. Nous avons donc exploité la fonctionnalité de hook du framework, pour intercepter l'exception avant de répondre à l'utilisateur : nous n'avons qu'à la transformer en réponse 422.
+
+```javascript
+function handleDomainAndHttpErrors( request, errorManager) {
+  const response = request.response;
+  if (response instanceof DomainError) {
+    return errorManager.handle(request, response);
+  }
+}
+```
+[source](https://github.com/1024pix/pix/blob/dev/api/lib/application/pre-response-utils.js)
+
+```javascript
+if (error instanceof DomainErrors.AlreadyExistingAdminMemberError) {
+    return new HttpErrors.UnprocessableEntityError(error.message);
+}
+```
+[source](https://github.com/1024pix/pix/blob/dev/api/lib/application/error-manager.js#L349-L351)
+
+Ce compromis fonctionne bien, car la même stratégie est appliquée sur tous les use-case et que la définition du cas alternatif est partagée dans les équipes. Les exceptions sont déclarées dans un dossier dédié dans le domaine, et gérée par un code générique. Le fait que le use-case lève une exception [est testé unitairement](https://github.com/1024pix/pix/blob/dev/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76), tout comme le code de gestion de l'exception.
+
+Pour expliciter les raisons de ce choix, qui peut surprendre les nouveaux venus, [un ADR a été rédigé](https://github.com/GradedJestRisk/pix-tools/blob/master/adr/handle-alternative-scenario.md.
 
 ### Appel HTTP en erreur - Retourner une valeur
 
