@@ -1,5 +1,10 @@
 # Excerpts
 
+You'll find below excerpts from the following texts:
+* 1993 : McConnell, Code complete
+* 2008 : Robert Matin, Clean code
+* 2018 : Douglas Crockford, How Javascript works
+
 ## Code complete
 > You might think the debate related to gotos is extinct, but (...) the goto is still alive and well and living deep in your company’s server. Moreover, modern equivalents of the goto debate still crop up in various guises, including debates about multiple returns, multiple loop exits, named loop exits, error processing, and exception handling.
 
