@@ -29,11 +29,20 @@ Nevertheless, I did it here to give you a taste, so you may have a chance of rea
 
 ## Clean code
 
-> Use Exceptions Rather Than Return Codes
+Chapter "Error handling" 's headings are the following
+- Use Exceptions Rather Than Return Codes
+- Write Your Try-Catch-Finally Statement First
+- Use unchecked exceptions
+- Provide context with exceptions
+- Define exception classes in terms of a caller's need
+- Define the normal flow
+- Don't return null
+- Don't pass null
 
 > Many code bases are completely dominated by error handling. When I say dominated, I don’t mean that error handling is all that they do. I mean that it is nearly impossible to see what the code does because of all the scattered error handling. Error handling is important, but if it obscures logic, it’s wrong.
 
 > Back in the distant past there were many languages that didn’t have exceptions. In those languages the techniques for handling and reporting errors were limited. You either set an error flag or returned an error code that the caller could check. The problem with these approaches is that they clutter the caller. The caller must check for errors immediately after the call. Unfortunately, it’s easy to forget. For this reason it is better to throw an exception when you encounter an error. The calling code is cleaner. Its logic is not obscured by error handling.
+
 
 ## How Javascript works
 
@@ -54,3 +63,5 @@ try {
 > When something goes seriously wrong, what can a program be expected to do about it ? (...)
 > It is not reasonable to expect, at our current level of technology, that the function can take corrective action. (...)
 > The details in the exception object might be important ands useful for the programmer to know. That information is instead delivered to a function that can make no good use of it. We have corrupted the information flow. That information should be sent to the programmer, perhaps in the form of a journal entry. Instead, it is sent down the call stack, where it can be misunderstood and forgotten.
+
+[//]: # (TODO: Ajouter le passage sur l'appelant qui ne sait pas quoi faire parce qu'il n'a pas le contexte.)

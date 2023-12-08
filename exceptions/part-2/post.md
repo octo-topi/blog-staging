@@ -1,6 +1,6 @@
 # Le retour du GOTO
 
-## Les exceptions
+## Faire ou ne pas faire exception ?
 
 Dans [l'article précédent](../part-1/post.md), nous avons vu que les débats sur le style d'implémentation ne datent pas d'hier.
 Passons aux implications actuelles avec cet indice de Steve McConnell.
@@ -18,12 +18,75 @@ Ici, confronté à deux contextes différents, l'équipe a décidé d'une soluti
 
 ## Ce qu'en dit la littérature
 
-En 1993 : McConnell, Code complete
+### Utiliser parfois des exceptions
 
-L'un des auteurs les plus populaires 2008 : Martin, Clean code
+En 1993, dans le chapitre "Defensive programing" de "Code complete", McConnell apparente le concept d'exception au `GOTO`, ce qui nous aide à comprendre ce qui est en jeu en termes de lisibilité. L'appel d'un `GOTO` a pour effet de transférer le contrôle à n'importe quel endroit du code : quelques lignes plus loin dans la fonction, à un autre endroit du fichier, ou dans n'importe quel autre fichier - on change brutalement de contexte, ce qui extrait l'attention du développeur d'une portion de code restreinte, la fonction en cours d'exécution à une autre portion. Dans le cas de l'exception, le contrôle n'est pas transféré n'importe où, mais potentiellement dans n'importe quel parent dans la pile d'appel, voir au processus appelant.
 
-Plus récemment (2018), Crockford dans son style (voire acide), How Javascript works
+S'il ne fallait en retenir qu'une phrase
+> Used judiciously, they can reduce complexity. Used imprudently, they can make code almost impossible to follow.
 
+[//]: # (TODO: L'exemple est-il utile ?)
+```javascript
+// some-file
+function foobar(){ 
+    // some code which may throw
+}
+function foo(){
+    throw new CustomException();
+}
+
+function bar(){
+    try {
+        foobar();
+        foo();
+    } catch(e){
+        if (e instanceof anotherCustomException){
+            // do something
+        }
+    }
+}
+
+// another-file
+function main(){
+    try{
+        baz();
+        bar();
+    } catch(e){
+        if (e instanceof domainException) {
+            // more handling conditionals..
+        }
+    }
+}
+``` 
+
+McConnell attire l'attention sur le fait que, face à une erreur, on peut soit favoriser :
+-  l'intégrité (ex: pour un matériel d'irradiation médical) et arrêter totalement l'application (la fonction lance une exception, interceptée par une fonction d'arrêt de l'appareil);
+- la robustesse (ex: pour l'affichage d'un traitement de texte) et continuer à peu près comme de si rien n'était (auquel cas la fonction ne lance pas d'exception).
+
+La gestion des erreurs n'est pas toujours une exigence technique, mais parfois une exigence fonctionnelle.
+Une fois cela dit, il liste sur une dizaine de pages [des critères précis](./excerpts.md) pour utiliser judicieusement les exceptions.
+
+### Utiliser souvent des exceptions
+
+2008 voit la publication par Martin du livre le plus connu aujourd'hui sur la lisibilité du code : "Clean code".
+Dans [le chapitre consacré à la gestion d'erreur](./excerpts.md), Michael Feathers défend l'utilisation des exceptions au lieu de codes de retour. Il a pour but d'isoler le comportement nominal du comportement exceptionnel (erreur).
+
+> Error handling is important, but if it obscures logic, it’s wrong. (..) We can write robust clean code if we see error handling as a separate concern, something that is viewable independently of our main logic. To the degree that we are able to do that, we can reason about it independently, and we can make great strides in the maintainability of our code.
+
+### Utiliser rarement des exceptions
+
+Plus récemment (2018), dans "How Javascript works", Crockford est [très critique](./excerpts.md) envers l'usage actuel des exceptions.
+Dans le même style radical que dans "The Good Parts", il explique que les exceptions ont été détournées de leur but initial, la gestion des erreurs, pour être utilisée comme n'importe quelle structure de contrôle. Il prescrit d'utiliser les code de retour dans la plupart des cas, et de garder les exceptions pour les seuls cas "désespérés".
+
+> Reasoning about error recovery is difficult. So we should go with the pattern that is simple and reliable. Make all the expected outcome into return values. Save the exception for exceptions
+
+### Erreur, vous avez dit erreur ?
+
+Avant de passer au cas pratique et de découvrir si le choix qui a été fait suit les préconisations d'un de ces trois livres (qui a raison après tout ?), il est important de faire un point de vocabulaire : qu'entendons-nous par exception ?
+
+Tous les développeurs connaissent l'élément de langage de programmation `(throw) exception`, mais les auteurs ci-dessus insistent sur la notion d'erreur : toutes les erreurs ne font pas l'objet d'exceptions. Pour clarifier ce point, je propose d'utiliser les mêmes termes que pour les cas d'utilisation en UML : nominal, alternatif, exceptionnel. Tout le monde est à peu près d'accord sur ce qu'est un cas nominal, c'est quand tout va bien. Par contre, ce qui distingue un cas alternatif et un cas exceptionnel est trop souvent une affaire de goût personnel. Crockford dit que, dans le cas d'un programme qui lit un fichier, le fait que le fichier n'existe pas n'est pas une exception.
+
+Si les développeurs arrivent à se mettre d'accord, de préférence avec l'avis du métier, sur ce qui est une exception et sur ce qui ne l'est pas, le code aura plus de chance d'être lisible. Si l'on suit Michael Feathers, ce sont les cas nominaux et alternatifs qui constituent le corps du programme (`the main logic`). Si une grande partie du code est consacré à la gestion d'erreur, ce ne sont pas des erreurs, mais des cas alternatifs : ils doivent être réintégrés au code principal.
 
 ## La règle et ses exceptions : deux exemples
 
@@ -65,3 +128,5 @@ Pour assurer sa diffusion, le concept d'ADR n'étant pas courant, nous avons out
 Si le développeur utilise la librairie `axios` au lieu de l'agent HTTP, la CI sort en erreur avec ce message "Please use http-agent instead (ADR 23)"
 
 https://github.com/1024pix/pix/blob/dev/api/lib/.eslintrc.cjs
+
+## Conclusion
