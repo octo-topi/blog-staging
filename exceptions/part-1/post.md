@@ -80,12 +80,12 @@ J'aimerais considérer les différences de style, les désaccords d'implémentat
 ## Ouverture
 
 Lorsqu'un développeur découvre une codebase, il est confronté à du code qui ne lui est pas habituel, où il ne retrouve pas ses repères.
-Bien qu'un certain nombre de styles d'écriture soient reconnus et conseillés, [l'état de l'art](https://blog.octo.com/en-finir-avec-la-dette-technique/) de l'équipe qu'il rejoint est différent de celui de l'équipe qu'il quitte. Je pense qu'il est tentant de rejeter cette difficulté sur l'équipe : il est "évident" que le code devrait être écrit d'une certaine manière (la sienne) ; puisqu'il ne l'est pas, c'est que ces membres sont peu rigoureux, ou pas à la page, voire incompétents ou  paresseux. 
+Bien qu'un certain nombre de styles d'écriture soient reconnus et conseillés, [l'état de l'art](https://blog.octo.com/en-finir-avec-la-dette-technique/) de l'équipe qu'il rejoint est différent de celui de l'équipe qu'il quitte. Je pense qu'il est tentant de rejeter cette difficulté sur l'équipe : il est "évident" que le code devrait être écrit d'une certaine manière (la sienne) ; puisqu'il ne l'est pas, c'est que ces membres sont peu rigoureux, ou pas à la page, voire incompétents ou paresseux. 
 
 Pour contrer cette tendance, ce biais personnel, je pense à l'aphorisme ["Context is everything".](./summary.md)
 > Human action can be rendered meaningful only by relating it to the contexts in which it takes place.
 
-Lorsque je suis confronté à un choix d'implémentation qui ne me paraît pas judicieux, je cherche à identifier les contraintes qui s'exerçaient, les compromis qu'a fait l'équipe. Cela ne signifie pas que la solution actuelle soit la meilleure, et appeler à l'inaction. Cela signifie que si je pense que la solution n'est plus la bonne, il me faut identifier les forces en présences et utiliser les bons effets de levier dans le système, plutôt que d'invoquer "le bon sens".
+Lorsque je suis confronté à un choix d'implémentation qui ne me paraît pas judicieux, je cherche à identifier les contraintes qui s'exerçaient, les compromis qu'a fait l'équipe. Cela ne signifie pas que la solution actuelle soit la meilleure, et appeler à l'inaction.Cela signifie que si je pense que la solution n'est plus la bonne, il me faut identifier les forces en présences et utiliser les bons effets de levier dans le système, plutôt que d'invoquer "le bon sens".
 
 Il existe des techniques spécialement conçues pour partager ce savoir dans l'équipe. 
-Je vous propose de suivre deux d'entre elles, les standards de code et les ADR, dans un [deuxième article](../part-2/post.md), où le GOTO refait surface.
+Je vous propose de suivre deux d'entre elles, les standards de code et les [ADR](https://github.com/1024pix/pix/blob/dev/docs/adr/0001-enregistrer-les-decisions-concernant-l-architecture.md), dans un [deuxième article](../part-2/post.md).
