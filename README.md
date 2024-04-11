@@ -5,6 +5,3 @@
 ```shell
 npm run generate-wysiwig
 ```
-
-
-

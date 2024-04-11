@@ -1,6 +1,7 @@
 # The one considered harmful
 
 ## Introduction
+
 GOTO a fait irruption dans ma carrière relativement tôt, et brutalement : mon évaluation de fin d'année stipulait que j'avais fait une faute professionnelle chez le client en utilisant un `GOTO`. J'aurais apprécié une solution plus élégante à ce traitement d'erreur en PL/SQL, mais personne de mon équipe n'en connaissait. De plus, la personne qui avait un jugement aussi tranché ne voulut jamais se faire connaître : le `GOTO` resta là et moi, comme tout prestataire, au bout d'un an, je m'en allais.
 
 Ce n'est que des années plus tard que je retrouvais, lors de mes lectures, la piste qui menait à Edsger W. Dijkstra et à la controverse du `GOTO`. Elle est intéressante en tant que fait historique, mais disons-le tout de suite, `GOTO` est absent de la plupart des langages créés à partir des années 90 (ex: Java, Javascript, Ruby), à l'exception de Go et C#.
@@ -8,7 +9,8 @@ Ce n'est que des années plus tard que je retrouvais, lors de mes lectures, la p
 Je trouve que cette controverse peut nous apprendre des choses sur la constitution d'un savoir partagé de la programmation.
 
 Je vous propose d'ouvrir la piste avec les textes suivants :
-- 1968 : Dijkstra, GOTO considered harmful 
+
+- 1968 : Dijkstra, GOTO considered harmful
 - 1974 : Knuth, Structured programing with Go to statements
 - 1993 : McConnell, Code complete
 
@@ -21,25 +23,27 @@ Dijkstra est un chercheur en informatique avec une solide base en mathématiques
 Il s'intéresse aussi à la preuve de programme. La preuve de programme, comme la preuve de théorème en mathématique, cherche à démontrer qu'un énoncé est vrai pour toutes les valeurs possibles. On peut prouver qu'un algorithme, par exemple le crible d'Ératosthène, permet d'obtenir tous les N nombres premiers entre 0 et N.
 
 Il remarque que certaines instructions, appelées structures de contrôle, sont faciles à utiliser dans les preuves :
-* assignation : `=`
-* sélection : `if`
-* répétition : `for` 
+- assignation : `=`
+- sélection : `if`
+- répétition : `for`
 
-Toutes, sauf une : l'instruction `GOTO`. Celle-ci permet de transférer le contrôle (d'aller à), soit à une ligne du programme (`GOTO 200`), soit à un endroit désigné par une étiquette (`GOTO FOO`). Cette instruction de "saut" permet de modifier l'exécution classique du programme "de haut en bas" : on quitte une boucle avant la fin, on remonte quelques lignes plus haut ou plus bas, voire on quitte le programme. 
+Toutes, sauf une : l'instruction `GOTO`. Celle-ci permet de transférer le contrôle (d'aller à), soit à une ligne du programme (`GOTO 200`), soit à un endroit désigné par une étiquette (`GOTO FOO`). Cette instruction de "saut" permet de modifier l'exécution classique du programme "de haut en bas" : on quitte une boucle avant la fin, on remonte quelques lignes plus haut ou plus bas, voire on quitte le programme.
 
 À cette époque, certains langages (PL/1, FORTRAN) ne disposent pas de mots-clefs pour certaines structures de contrôle : le `GOTO` permet de les implémenter.
+
 ```
 0: BEGIN
 1: <DO_SOMETHING_WITH_N>
 2: IF N > 0 THEN GOTO 1;
 3: <DO_SOMETHING_UNRELATED>
 ```
+
 Vous aurez peut-être reconnu ici un `do .. while`.
 
-Dijkstra pense que l'instruction `GOTO`, en plus de ne pouvoir être utilisée dans les preuves de programme, rend plus difficile la compréhension du programme par les développeurs. En 1968, il publie ses pensées dans [un article](./summary.md) au ton léger, dans un journal informatique connu. 
+Dijkstra pense que l'instruction `GOTO`, en plus de ne pouvoir être utilisée dans les preuves de programme, rend plus difficile la compréhension du programme par les développeurs. En 1968, il publie ses pensées dans [un article](./summary.md) au ton léger, dans un journal informatique connu.
 
 Cet article se conclut ainsi :
-> The go to statement as it stands is just too primitive; it is too much an invitation to make a mess of one’s program. 
+> The go to statement as it stands is just too primitive; it is too much an invitation to make a mess of one’s program.
 > One can regard and appreciate the clauses considered as bridling its use.
 
 ## 20 ans de controverse
@@ -58,22 +62,22 @@ Si vous souhaitez jeter un coup d'œil à ces articles (à ce thread nommé `“
 
 ## 20 ans de recherche
 
-Une question émerge dans les années 1970 ; 2O après, elle cause toujours des réactions - parfois peu argumentées. Ce sont pourtant des années durant lesquelles beaucoup de code a été écrit, durant lesquelles des langages de haut niveau ont vu le jour : il semble à première vue que la question de la lisibilité du code soit restée un mystère. 
+Une question émerge dans les années 1970 ; 2O après, elle cause toujours des réactions - parfois peu argumentées. Ce sont pourtant des années durant lesquelles beaucoup de code a été écrit, durant lesquelles des langages de haut niveau ont vu le jour : il semble à première vue que la question de la lisibilité du code soit restée un mystère.
 
-A première vue seulement. Vous connaissez peut-être Donald Knuth pour sa citation dans le premier tweet de Devops Borat. 
+A première vue seulement. Vous connaissez peut-être Donald Knuth pour sa citation dans le premier tweet de Devops Borat.
 > I remember very clear I cry when I finish volume 3 of Knuth.
 
 Et bien, Donald Knuth publie le volume 1 de "The Art of Computer Programming", la référence historique des livres d'algorithmie en 1968, la même année que le début de la controverse. Six ans après, en 1984, il publie un article de près de 40 pages sur le sujet du `GOTO`. Que va-t-il en dire ? Le début donne le ton en citant un écrit politique plutôt qu'un théorème mathématique.
 > Will Utopia 84, or perhaps we should call it NEWSPEAK, contain go to statements?
 
-L'article présente ensuite des programmes dans lequel l'usage de `GOTO` apporte des bénéfices, ainsi que d'autres dans lequel il n'en offre pas. Son opinion est nuancée, il nous dit en substance "cela dépend du contexte". 
+L'article présente ensuite des programmes dans lequel l'usage de `GOTO` apporte des bénéfices, ainsi que d'autres dans lequel il n'en offre pas. Son opinion est nuancée, il nous dit en substance "cela dépend du contexte".
 
 Il rapporte également cette citation de Dijkstra
 > Please don’t fall into the trap of believing that I am terribly dogmatical about the go to statement. I have the uncomfortable feeling that others are making a religion out of it, as if the conceptual problems of programming could be solved by a single trick, by a simple form of coding discipline!
 
 On en entendra un écho deux ans plus tard avec "No Silver Bullet" de Fred Brooks en 1986.
 
-D'autres chercheurs étudieront aussi le problème, à l'aide de méthodes de terrain. Leurs publications sont convaincantes dans le ton, mais pas très concluantes dans les faits. Voilà ce [qu'en dit Sheil](./summary.md) en 1981, après avoir compilé la majorité d'entre elles. 
+D'autres chercheurs étudieront aussi le problème, à l'aide de méthodes de terrain. Leurs publications sont convaincantes dans le ton, mais pas très concluantes dans les faits. Voilà ce [qu'en dit Sheil](./summary.md) en 1981, après avoir compilé la majorité d'entre elles.
 > Evidence suggests only that deliberately chaotic control structure degrades (programmer) performance. These experiments provide virtually no evidence for the beneficial effect of any specific method of structuring control flow.
 
 Sheil éclaire le débat en soulignant que ce n'est pas le mot-clef du langage qui est en jeu, mais la démarche de programmation. Dijkstra promeut une démarche appelée programmation structurée, et c'est cela qui doit être examiné.
@@ -82,7 +86,6 @@ Sheil éclaire le débat en soulignant que ce n'est pas le mot-clef du langage q
 Il ajoute aussi que les études scientifiques concernant la programmation laissent à désirer, ce qui me semble être toujours d'actualité 40 ans après.
 > Most innovations in programming languages and methodology are motivated by a belief that they will improve the performance of the programmers who use them. Although such claims are usually advanced informally, there is a growing body of research which attempts to verify them by controlled observation of programmers’ behavior. Surprisingly, these studies have found few clear effects of changes in either programming notation or practice. Less surprisingly, the computing community has paid relatively little attention to these results.
 
-
 ## Textes sacrés et interprétations
 
 L'instruction `GOTO` est absente de la majorité des langages actuels, c'est qu'il ne doit pas être indispensable.
@@ -90,11 +93,12 @@ Mais pourquoi a-t-il réellement disparu ? Et aurait-on pu décider plus tôt de
 Les échanges entre experts, pendant plusieurs dizaines d'années, ne semblent pas avoir éclairci le débat.
 
 Mais alors, sur des sujets un peu plus complexes, comment espérer avoir des certitudes :
+
 - sur la modularité d'un programme - quel objectif de complexité cyclomatique ?
 - sur le choix d'un paradigme de programmation - fonctionnel ou POO ?
 - sur le choix d'une architecture applicative - faut-il faire de la Clean architecture ?
 
-J'ai constaté que lorsqu'une question d'intelligibilité de code est posée (lisibilité, maintenabilité, ou encore de code "propre") les avis sont souvent tranchés. Cela peut aller jusqu'à mettre certaines  têtes à prix, sans circonstances atténuantes : les commentaires, les fonctions de plus de N lignes, les langages à typage dynamique. 
+J'ai constaté que lorsqu'une question d'intelligibilité de code est posée (lisibilité, maintenabilité, ou encore de code "propre") les avis sont souvent tranchés. Cela peut aller jusqu'à mettre certaines  têtes à prix, sans circonstances atténuantes : les commentaires, les fonctions de plus de N lignes, les langages à typage dynamique.
 
 Je ne suis pas le dernier à invoquer des autorités, à citer leurs ouvrages sacrés. Mais à force de lire des commandements et d'essayer de les mettre en pratique, je me suis retrouvé devant des situations qui ne me satisfaisaient pas. La règle ne peut pas être appliquée à la lettre, toujours et partout. Je me suis retrouvé à écrire dans ma tête des commentaires, des exégèses. À tenter de faire la différence entre la lettre et esprit de la loi. C'est un travail passionnant !
 
@@ -103,7 +107,7 @@ Je trouve le serment de non-allégeance d'Alistair Cockburn particulièrement in
 
 Je propose d'utiliser les textes de référence comme un point de départ commun. Ils contiennent une base d'arguments pour ouvrir une discussion (ex : McConnell écrit "Make names of routines as long as necessary" mais là le nom de ta fonction de test fait 130 caractères) plutôt que pour interdire cette discussion (ex : Robert Martin a écrit "pas de commentaire" : tu m'enlèves ce commentaire). Il s'agit de passer d'une position dogmatique à une envie d'apprendre, stimulée par le désaccord. Il ne s'agit pas d'une position relativiste et basée sur l'opinion : "personne n'a raison, donc chacun fait ce qu'il veut".
 
-Tout cela est très bien, me direz-vous, mais en pratique, comment éviter des discussions sans fin, notamment dans les revues de code si vous les pratiquez ? Une équipe de développement ne peut pas devenir une yeshiva ou une cour de monastère bouddhiste où l'on pratique le débat pendant des heures. Je vais vous répondre, mais avant cela, il nous reste encore à considérer un dernier facteur : le contexte de l'équipe. 
+Tout cela est très bien, me direz-vous, mais en pratique, comment éviter des discussions sans fin, notamment dans les revues de code si vous les pratiquez ? Une équipe de développement ne peut pas devenir une yeshiva ou une cour de monastère bouddhiste où l'on pratique le débat pendant des heures. Je vais vous répondre, mais avant cela, il nous reste encore à considérer un dernier facteur : le contexte de l'équipe.
 
 ## L'équipe
 
@@ -112,6 +116,7 @@ Il est tentant pour lui de rejeter sa difficulté sur l'équipe : il est "évide
 Les membres de l'équipe sont peu rigoureux, pas à la page, voire (osons le mot) incompétents. Ils le font exprès, non ?
 
 Ce nouveau développeur rencontre deux difficultés :
+
 - accepter qu'il n'y pas de règle évidente et qui s'applique partout, comme déjà évoqué ;
 - comprendre le contexte dans lequel travaille l'équipe.
 

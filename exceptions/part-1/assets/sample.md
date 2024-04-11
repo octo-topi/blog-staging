@@ -1,7 +1,7 @@
 Étant donné une matrice d'entiers, écrire un programme qui affiche le numéro de la ligne qui ne contient que des valeurs nulles.
 
-
 Version avec GOTO
+
 ```shell
 for i := 1 to n
 do begin
@@ -18,6 +18,7 @@ end;
 ```
 
 Version sans GOTO
+
 ```
 i:=1;
 repeat
