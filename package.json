@@ -1,0 +1,15 @@
+{
+  "name": "blog-staging",
+  "scripts": {
+    "lint": "npm run lint:markdown && npm run lint:link",
+    "lint:markdown": "markdownlint --config .mardownlint.jsonc '**/*.md'",
+    "lint:link": "find exceptions -name \\*.md -print0 | xargs -0 -n1 markdown-link-check",
+    "lint:fix": "markdownlint --config .mardownlint.jsonc --fix '**/*.md'"
+  },
+  "license": "ISC",
+  "devDependencies": {
+    "markdown-link-check": "^3.12.1",
+    "markdownlint": "^0.34.0",
+    "markdownlint-cli": "^0.39.0"
+  }
+}
