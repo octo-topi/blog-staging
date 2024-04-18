@@ -4,7 +4,8 @@
     "lint": "npm run lint:markdown && npm run lint:link",
     "lint:markdown": "markdownlint --config .mardownlint.jsonc '**/*.md'",
     "lint:link": "find exceptions -name \\*.md -print0 | xargs -0 -n1 markdown-link-check",
-    "lint:fix": "markdownlint --config .mardownlint.jsonc --fix '**/*.md'"
+    "lint:fix": "markdownlint --config .mardownlint.jsonc --fix '**/*.md'",
+    "generate-wysiwig": "pandoc --from markdown --to odt exceptions/part-1/post.md > post.odt"
   },
   "license": "ISC",
   "devDependencies": {
