@@ -1,20 +1,20 @@
 # Considered harmful
 
 "Considered harmful" est, comme toutes les expressions qui ont de la saveur (pensez à "It's raining cats and dogs"), difficile à traduire.
-Elle apparaît dans les titres d'articles de journaux pour attirer l'attention du lecteur : quelque chose est considéré par quelqu'un comme préjudiciable. 
+Elle apparaît dans les titres d'articles de journaux pour attirer l'attention du lecteur : quelque chose est considéré par quelqu'un comme préjudiciable.
 C'est quasiment une accusation. L'informatique est [coutumière du fait](https://en.wikipedia.org/wiki/Considered_harmful), avec près de 65 articles portant ce nom.
-Ces critiques permettent-elles à la discipline de progresser, de s'approcher d'une vérité ? 
+Ces critiques permettent-elles à la discipline de progresser, de s'approcher d'une vérité ?
 
 Je vous propose de suivre la piste de l'ancêtre de ces articles : `GOTO considered harmful`.
 Vous n'aurez pas besoin d'être développeur fullstack, ni même d'être développeur tout court, pour me suivre.
-Tout part de cette constatation : les programmes sont plus faciles à lire si les instructions s'exécutent les uns après les autres.
+Tout part de cette constatation : les programmes sont plus faciles à lire si les instructions s'exécutent les unes après les autres.
 L'instruction `GOTO` modifie l'exécution "de haut en bas". Tout comme au jeu de l'oie, avec ses ponts et ses puits, `GOTO` fait brusquement avancer ou reculer le "pion" du joueur.
 
 ## Introduction
 
 `GOTO` a fait irruption dans ma carrière relativement tôt, et brutalement : mon évaluation de fin d'année stipulait que j'avais fait une faute professionnelle chez le client en utilisant un `GOTO`. J'aurais apprécié une solution plus élégante à ce traitement d'erreur en PL/SQL, mais personne de mon équipe n'en connaissait. De plus, la personne qui avait un jugement aussi tranché ne voulut jamais se faire connaître : le `GOTO` resta là et moi, comme tout prestataire, au bout d'un an, je m'en allais.
 
-Ce n'est que des années plus tard que je retrouvais, lors de mes lectures, la piste qui menait à Edsger W. Dijkstra et à la controverse du `GOTO`. Elle est intéressante en tant que fait historique, mais disons-le tout de suite, `GOTO` est absent de la plupart des langages créés à partir des années 90 (ex: Java, Javascript, Ruby), à l'exception de Go et C#.
+Ce n'est que des années plus tard que je retrouvais, lors de mes lectures, la piste qui menait à Edsger W. Dijkstra et à la controverse du `GOTO`. Elle est intéressante en tant que fait historique, mais disons-le tout de suite, `GOTO` est absent de la plupart des langages créés à partir des années 90 (ex : Java, Javascript, Ruby), à l'exception de Go et C#.
 
 Je trouve que cette controverse peut nous apprendre des choses sur la constitution d'un savoir partagé de la programmation.
 
@@ -24,7 +24,7 @@ Je vous propose d'ouvrir la piste avec les textes suivants :
 - 1974 : Knuth, Structured programing with Go to statements
 - 1993 : McConnell, Code complete
 
-Dans [un second article](../part-2/post.md), je vous propose de voir les répercutions de cette controverse dans une base de code contemporaine (API REST NodeJS), avec le sujet de la gestion des exceptions. Si vous préférez le code aux discussions historiques, rendez-vous tout de suite au second article, car il est auto-portant.
+Dans un second article, je vous propose de voir les répercutions de cette controverse dans une base de code contemporaine (API REST NodeJS), avec le sujet de la gestion des exceptions. Si vous préférez le code aux discussions historiques, sachez que le second article est auto-portant.
 
 ## L'origine
 
@@ -78,20 +78,21 @@ Une question émerge dans les années 1970 ; 2O après, elle cause toujours des 
 À première vue seulement. Vous connaissez peut-être Donald Knuth pour sa citation dans le premier tweet de Devops Borat.
 > I remember very clear I cry when I finish volume 3 of Knuth.
 
-Et bien, en 1968, donc la même année que le début de la controverse, Donald Knuth publie le volume 1 de "The Art of Computer Programming", la référence historique des livres d'algorithmie. Seize ans après, en 1984, il publie un article de près de 40 pages sur le sujet du `GOTO`. Que va-t-il en dire ? Le début donne le ton en citant un écrit politique plutôt qu'un théorème mathématique.
+En 1968, donc la même année que le début de la controverse, Donald Knuth publie le volume 1 de "The Art of Computer Programming", la référence historique des livres d'algorithmie. Six ans après, en 1974, il publie un article de près de 40 pages sur le sujet du `GOTO`. Que va-t-il en dire ? Le début donne le ton en citant un écrit politique plutôt qu'un théorème mathématique.
 > Will Utopia 84, or perhaps we should call it NEWSPEAK, contain go to statements?
 
 L'article présente ensuite des programmes dans lesquels l'usage de `GOTO` apporte des bénéfices, ainsi que d'autres dans lesquels il n'en offre pas. Son opinion est nuancée, il nous dit en substance "cela dépend du contexte".
 
-Il rapporte également cette citation de Dijkstra
+Il rapporte également cette citation de Dijkstra.
 > Please don’t fall into the trap of believing that I am terribly dogmatical about the go to statement. I have the uncomfortable feeling that others are making a religion out of it, as if the conceptual problems of programming could be solved by a single trick, by a simple form of coding discipline!
 
-On en entendra un écho deux ans plus tard avec "No Silver Bullet" de Fred Brooks en 1986.
+D'autres chercheurs étudieront aussi le problème, à l'aide de méthodes de terrain.
 
-D'autres chercheurs étudieront aussi le problème, à l'aide de méthodes de terrain. Leurs publications sont convaincantes dans le ton, mais pas très concluantes dans les faits. Voilà ce [qu'en dit Sheil](./summary.md) en 1981, après avoir compilé la majorité d'entre elles.
+En 1981, 13 ans après, [Sheil](./summary.md) compile ces publications.
+Il constate qu'elles sont convaincantes dans le ton, mais pas très concluantes dans les faits.
 > Evidence suggests only that deliberately chaotic control structure degrades (programmer) performance. These experiments provide virtually no evidence for the beneficial effect of any specific method of structuring control flow.
 
-Sheil éclaire le débat en soulignant que ce n'est pas le mot-clef du langage qui est en jeu, mais la démarche de programmation. Dijkstra promeut une démarche appelée programmation structurée, et c'est cela qui doit être examiné.
+Néanmoins, il éclaire le débat en soulignant que ce n'est pas le mot-clef du langage (`GOTO`) qui est en jeu, mais la démarche de programmation. Dijkstra promeut une démarche appelée programmation structurée, et c'est cela qui doit être examiné.
 > Either the programmer understands the structured approach to programming, in which case her code will reflect it (whether or not structured control constructs are available), or the programmer does not, in which case the presence of syntactic constructs is irrelevant.
 
 Il ajoute aussi que les études scientifiques concernant la programmation laissent à désirer, ce qui me semble être toujours d'actualité 40 ans après.
@@ -99,24 +100,42 @@ Il ajoute aussi que les études scientifiques concernant la programmation laisse
 
 ## Textes sacrés et interprétations
 
+Nous voilà arrivés au bout de la piste. Si l'on s'arrêtait un moment pour réfléchir à ce que nous avons appris ?
+Je ne pourrais pas écouter ce que tu aurais à me dire, toi lecteur, mais je peux te partager mes réflexions.
+
 L'instruction `GOTO` est absente de la majorité des langages actuels, c'est qu'il ne doit pas être indispensable.
 Mais pourquoi a-t-il réellement disparu ? Et aurait-on pu décider plus tôt de s'en passer ?
 Les échanges entre experts, pendant plusieurs dizaines d'années, ne semblent pas avoir éclairci le débat.
 
-Mais alors, sur des sujets un peu plus complexes, comment espérer avoir des certitudes :
+À plus forte raison, sur des sujets plus complexes, je ne pense pas que l'on puisse avoir des certitudes :
 
 - sur la modularité d'un programme - quel objectif de complexité cyclomatique ?
 - sur le choix d'un paradigme de programmation - fonctionnel ou POO ?
 - sur le choix d'une architecture applicative - faut-il faire de la Clean architecture ?
 
-J'ai constaté que lorsqu'une question d'intelligibilité de code est posée (lisibilité, maintenabilité, ou encore de code "propre") les avis sont souvent tranchés. Cela peut aller jusqu'à mettre certaines  têtes à prix, sans circonstances atténuantes : les commentaires, les fonctions de plus de N lignes, les langages à typage dynamique.
+Je souhaite maintenant aborder la question qui m'intéresse le plus dans mon travail, et la mettre en perspective avec la controverse du `GOTO`.
+Comment écrire du code que tout le monde comprenne et puisse modifier facilement ?
 
-Je ne suis pas le dernier à invoquer des autorités, à citer leurs ouvrages sacrés. Mais à force de lire des commandements et d'essayer de les mettre en pratique, je me suis retrouvé devant des situations qui ne me satisfaisaient pas. La règle ne peut pas être appliquée à la lettre, toujours et partout. Je me suis retrouvé à écrire dans ma tête des commentaires, des exégèses. À tenter de faire la différence entre la lettre et esprit de la loi. C'est un travail passionnant !
+Cette question s'est posée depuis les débuts de l'informatique, mais certains développeurs s'y sont particulièrement intéressés ces trente dernières années.
+Certains se sont désignés sous le nom de "software crafters" et utilisent les termes suivants : du code lisible, maintenable et "propre".
+Pendant deux ans, je me suis plongé dans le sujet. Je me suis tourné vers ceux qui faisaient autorité, et lu leurs ouvrages (sacrés). J'ai mémorisé les commandements et essayé de les mettre en pratique, mais je me suis retrouvé devant des situations qui ne me satisfaisaient pas. Comme si la règle ne pouvait pas être appliquée à la lettre, toujours et partout. Je me suis retrouvé à écrire dans ma tête des commentaires, des exégèses. À tenter de faire la différence entre la lettre et esprit de la loi. Puis je passais à un autre ouvrage : horreur, ils se contredisaient ! Comment faire ? J'espérais bien, après avoir fait tout ça, trouver une solution définitive ; pas un mode d'emploi, mais quelque chose de solide.
 
-Je trouve le serment de non-allégeance d'Alistair Cockburn particulièrement inspirant pour ceux qui aiment faire ce travail de compréhension.
+Je l'ai trouvé, mais ce n'était pas du tout ce que j'attendais. Voilà sa meilleure formulation : le serment de non-allégeance d'Alistair Cockburn.
 > I promise not to exclude from consideration any idea based on its source, but to consider ideas across schools and heritages in order to find the ones that best suit the current situation.
 
-Je propose d'utiliser les textes de référence comme un point de départ commun. Ils contiennent une base d'arguments pour ouvrir une discussion (ex : McConnell écrit "Make names of routines as long as necessary" mais là le nom de ta fonction de test fait 130 caractères) plutôt que pour interdire cette discussion (ex : Robert Martin a écrit "pas de commentaire" : tu m'enlèves ce commentaire). Il s'agit de passer d'une position dogmatique à une envie d'apprendre, stimulée par le désaccord. Il ne s'agit pas d'une position relativiste et basée sur l'opinion : "personne n'a raison, donc chacun fait ce qu'il veut".
+Elle me plaît pour des raisons personnelles : sa formulation est paradoxale (un serment de non-allégeance) et elle peut s'appliquer à toute autre chose que l'informatique. Cela mis à part, je la trouve pertinente pour tous les développeurs car :
+
+- elle expose un constat : il existe plusieurs écoles de pensées ;
+- elle propose une solution : chaque personne a la responsabilité d'effectuer sa propre synthèse.
+
+J'ai ensuite eu l'occasion de travailler dans des équipes qui se revendiquaient du "craft". Je pensais trouver parmi elles un débat riche et des positions nuancées. Mon ressenti personnel, après quelques années, est que leurs avis sont souvent tranchés, sans nuances. Cela peut aller jusqu'à mettre certaines têtes à prix, sans circonstances atténuantes : les commentaires, les fonctions de plus de N lignes, les langages à typage dynamique. J'ai été surpris et un peu déçu : j'espérais plus d'humilité. Mais peut-être est-ce simplement humain : "We have met the enemy and they are ours.". Je fais probablement partie de ceux qui manquent d'humilité, à l'occasion.
+
+Bien. Que faire donc de ces textes de référence ? Je propose de les utiliser comme un point de départ commun. Ils contiennent une base d'arguments :
+
+- pour ouvrir une discussion (ex : McConnell écrit "Make names of routines as long as necessary" mais là le nom de ta fonction de test fait 130 caractères) ;
+- plutôt que pour interdire cette discussion (ex : Robert Martin a écrit "pas de commentaire" : tu m'enlèves ce commentaire).
+
+Ne transformons pas ces textes en arme contre les autres. Évitons le piège de la position dogmatique ; cultivons notre envie d'apprendre sans fin, stimulée par le désaccord. Et ne tombons pas non plus dans l'autre piège de la position relativiste, et basée sur l'opinion : "personne n'a raison, donc chacun fait ce qu'il veut".
 
 Tout cela est très bien, me direz-vous, mais en pratique, comment éviter des discussions sans fin, notamment dans les revues de code si vous les pratiquez ? Une équipe de développement ne peut pas devenir une yeshiva ou une cour de monastère bouddhiste où l'on pratique le débat pendant des heures. Je vais vous répondre, mais avant cela, il nous reste encore à considérer un dernier facteur : le contexte de l'équipe.
 
@@ -137,7 +156,7 @@ Comme le disent les sociologues ["Context is everything"](./summary.md)
 
 Ce phénomène est exposé dans un article de ce blog : [l'état de l'art](https://blog.octo.com/en-finir-avec-la-dette-technique/) de l'équipe qu'il rejoint est différent de celui de l'équipe qu'il quitte.
 
-En conséquence, en tant que nouveau développeur, lorsque je suis confronté à un choix d'implémentation qui ne me paraît pas judicieux, j'ai tendance à invoquer "le bon sens" et à le critiquer. Si je pouvais identifier les contraintes qui s'exerçaient, je comprendrai les compromis qu'a fait l'équipe. Cela ne signifie pas que la solution actuelle sera toujours la bonne et appeler à l'inaction. Cela me permet d'évaluer si les contraintes ont changé pour reconsidérer la solution.
+En conséquence, en tant que nouveau développeur, lorsque je suis confronté à un choix d'implémentation qui ne me paraît pas judicieux, j'ai tendance à invoquer "le bon sens" et à le critiquer. Si je pouvais identifier les contraintes qui s'exerçaient, je comprendrais les compromis qu'a fait l'équipe. Cela ne signifie pas pour autant que la solution actuelle est toujours la bonne. Cela me permet d'évaluer si les contraintes ont changé, et si oui, reconsidérer la solution.
 
 ## Et en pratique ?
 
