@@ -23,7 +23,7 @@ On peut matérialiser les raisons de son choix dans un [ADR](https://github.com/
 
 ### Utiliser parfois des exceptions
 
-En 1993, dans le chapitre "Defensive programing" de "Code complete", McConnell apparente le concept d'exception au `GOTO`. Pour rappel, l'invocation du `GOTO` permet de "sauter" (transférer le contrôle) vers n'importe quelle ligne du fichier : en avant, en arrière... C'est une fonctionnalité assez puissante. Assez puissante aussi pour rendre le code difficile à comprendre. Alors que l'attention du développeur est généralement restreinte à une portion de code à la fois (ex : la fonction en cours d'exécution), avec le `GOTO` on change brutalement de contexte sans préavis.
+En 1993, dans le chapitre "Defensive programing" de "Code complete", McConnell apparente le concept d'exception au `GOTO`. Pour rappel, l'invocation du `GOTO` permet de "sauter" (transférer directement le contrôle) vers n'importe quelle ligne du fichier : en avant, en arrière... C'est une fonctionnalité assez puissante. Assez puissante aussi pour rendre le code difficile à comprendre. Alors que l'attention du développeur est généralement restreinte à une portion de code à la fois (ex : la fonction en cours d'exécution), avec le `GOTO` on change brutalement de contexte sans préavis.
 
 Dans le cas de l'exception, le contrôle n'est pas transféré n'importe où dans le fichier. Il est transféré plus haut dans la pile d'appel, voir au processus appelant. On remarquera que là où le `GOTO` se limitait au fichier, l'exception a un périmètre plus large.
 

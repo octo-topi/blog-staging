@@ -28,7 +28,7 @@ Il remarque que certaines instructions, appelées structures de contrôle, sont 
 - sélection : `if`
 - répétition : `for`
 
-Toutes, sauf une : l'instruction `GOTO`. Celle-ci permet de transférer le contrôle (d'aller à), soit à une ligne du programme (`GOTO 200`), soit à un endroit désigné par une étiquette (`GOTO FOO`). Cette instruction de "saut" permet de modifier l'exécution classique du programme "de haut en bas" : on quitte une boucle avant la fin, on remonte quelques lignes plus haut ou plus bas, voire on quitte le programme.
+Toutes, sauf une : l'instruction `GOTO`. Celle-ci permet de transférer directement le contrôle (d'aller à), soit à une ligne du programme (`GOTO 200`), soit à un endroit désigné par une étiquette (`GOTO FOO`). Cette instruction de "saut" permet de modifier l'exécution classique du programme "de haut en bas" : on quitte une boucle avant la fin, on remonte quelques lignes plus haut ou plus bas, voire, on quitte le programme.
 
 À cette époque, certains langages (PL/1, FORTRAN) ne disposent pas de mots-clefs pour certaines structures de contrôle : le `GOTO` permet de les implémenter.
 
@@ -65,13 +65,13 @@ Si vous souhaitez jeter un coup d'œil à ces articles (à ce thread nommé `“
 
 Une question émerge dans les années 1970 ; 2O après, elle cause toujours des réactions - parfois peu argumentées. Ce sont pourtant des années durant lesquelles beaucoup de code a été écrit, durant lesquelles des langages de haut niveau ont vu le jour : il semble à première vue que la question de la lisibilité du code soit restée un mystère.
 
-A première vue seulement. Vous connaissez peut-être Donald Knuth pour sa citation dans le premier tweet de Devops Borat.
+À première vue seulement. Vous connaissez peut-être Donald Knuth pour sa citation dans le premier tweet de Devops Borat.
 > I remember very clear I cry when I finish volume 3 of Knuth.
 
-Et bien, Donald Knuth publie le volume 1 de "The Art of Computer Programming", la référence historique des livres d'algorithmie en 1968, la même année que le début de la controverse. Six ans après, en 1984, il publie un article de près de 40 pages sur le sujet du `GOTO`. Que va-t-il en dire ? Le début donne le ton en citant un écrit politique plutôt qu'un théorème mathématique.
+Et bien, en 1968, donc la même année que le début de la controverse, Donald Knuth publie le volume 1 de "The Art of Computer Programming", la référence historique des livres d'algorithmie. Seize ans après, en 1984, il publie un article de près de 40 pages sur le sujet du `GOTO`. Que va-t-il en dire ? Le début donne le ton en citant un écrit politique plutôt qu'un théorème mathématique.
 > Will Utopia 84, or perhaps we should call it NEWSPEAK, contain go to statements?
 
-L'article présente ensuite des programmes dans lequel l'usage de `GOTO` apporte des bénéfices, ainsi que d'autres dans lequel il n'en offre pas. Son opinion est nuancée, il nous dit en substance "cela dépend du contexte".
+L'article présente ensuite des programmes dans lesquels l'usage de `GOTO` apporte des bénéfices, ainsi que d'autres dans lesquels il n'en offre pas. Son opinion est nuancée, il nous dit en substance "cela dépend du contexte".
 
 Il rapporte également cette citation de Dijkstra
 > Please don’t fall into the trap of believing that I am terribly dogmatical about the go to statement. I have the uncomfortable feeling that others are making a religion out of it, as if the conceptual problems of programming could be solved by a single trick, by a simple form of coding discipline!
@@ -125,7 +125,7 @@ En effet, on ne choisit pas le même langage, le même design dans un contexte d
 Comme le disent les sociologues ["Context is everything"](./summary.md)
 > Human action can be rendered meaningful only by relating it to the contexts in which it takes place.
 
-Ce phénomène est exposé dans un post de ce blog : [l'état de l'art](https://blog.octo.com/en-finir-avec-la-dette-technique/) de l'équipe qu'il rejoint est différent de celui de l'équipe qu'il quitte.
+Ce phénomène est exposé dans un article de ce blog : [l'état de l'art](https://blog.octo.com/en-finir-avec-la-dette-technique/) de l'équipe qu'il rejoint est différent de celui de l'équipe qu'il quitte.
 
 En conséquence, en tant que nouveau développeur, lorsque je suis confronté à un choix d'implémentation qui ne me paraît pas judicieux, j'ai tendance à invoquer "le bon sens" et à le critiquer. Si je pouvais identifier les contraintes qui s'exerçaient, je comprendrai les compromis qu'a fait l'équipe. Cela ne signifie pas que la solution actuelle sera toujours la bonne et appeler à l'inaction. Cela me permet d'évaluer si les contraintes ont changé pour reconsidérer la solution.
 
