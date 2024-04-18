@@ -1,8 +1,18 @@
-# The one considered harmful
+# Considered harmful
+
+"Considered harmful" est, comme toutes les expressions qui ont de la saveur (pensez à "It's raining cats and dogs"), difficile à traduire.
+Elle apparaît dans les titres d'articles de journaux pour attirer l'attention du lecteur : quelque chose est considéré par quelqu'un comme préjudiciable. 
+C'est quasiment une accusation. L'informatique est [coutumière du fait](https://en.wikipedia.org/wiki/Considered_harmful), avec près de 65 articles portant ce nom.
+Ces critiques permettent-elles à la discipline de progresser, de s'approcher d'une vérité ? 
+
+Je vous propose de suivre la piste de l'ancêtre de ces articles : `GOTO considered harmful`.
+Vous n'aurez pas besoin d'être développeur fullstack, ni même d'être développeur tout court, pour me suivre.
+Tout part de cette constatation : les programmes sont plus faciles à lire si les instructions s'exécutent les uns après les autres.
+L'instruction `GOTO` modifie l'exécution "de haut en bas". Tout comme au jeu de l'oie, avec ses ponts et ses puits, `GOTO` fait brusquement avancer ou reculer le "pion" du joueur.
 
 ## Introduction
 
-GOTO a fait irruption dans ma carrière relativement tôt, et brutalement : mon évaluation de fin d'année stipulait que j'avais fait une faute professionnelle chez le client en utilisant un `GOTO`. J'aurais apprécié une solution plus élégante à ce traitement d'erreur en PL/SQL, mais personne de mon équipe n'en connaissait. De plus, la personne qui avait un jugement aussi tranché ne voulut jamais se faire connaître : le `GOTO` resta là et moi, comme tout prestataire, au bout d'un an, je m'en allais.
+`GOTO` a fait irruption dans ma carrière relativement tôt, et brutalement : mon évaluation de fin d'année stipulait que j'avais fait une faute professionnelle chez le client en utilisant un `GOTO`. J'aurais apprécié une solution plus élégante à ce traitement d'erreur en PL/SQL, mais personne de mon équipe n'en connaissait. De plus, la personne qui avait un jugement aussi tranché ne voulut jamais se faire connaître : le `GOTO` resta là et moi, comme tout prestataire, au bout d'un an, je m'en allais.
 
 Ce n'est que des années plus tard que je retrouvais, lors de mes lectures, la piste qui menait à Edsger W. Dijkstra et à la controverse du `GOTO`. Elle est intéressante en tant que fait historique, mais disons-le tout de suite, `GOTO` est absent de la plupart des langages créés à partir des années 90 (ex: Java, Javascript, Ruby), à l'exception de Go et C#.
 
@@ -54,7 +64,7 @@ Cet article ne passera pas inaperçu - une controverse naît : faut-il interdire
 Ce journal publiera en 1987 (20 ans après), au titre du droit de réponse, un article en faveur du `GOTO`. Il commence par l'affirmation suivante :
 > The notion that the GOT0 is harmful is accepted almost universally, without question or doubt. The cost to business has already been hundreds of millions of dollars in excess development and maintenance costs, plus the hidden cost of programs never developed due to insufficient resources. The belief that GOTOs are harmful appears to have become a religious doctrine, unassailable by evidence.
 
-Suit un programme très simple, en deux versions : avec et sans GOTO. Cet article fera lui-même l'objet de 17 réponses, chacune avec sa version du programme.
+Suit un programme très simple, en deux versions : avec et sans `GOTO`. Cet article fera lui-même l'objet de 17 réponses, chacune avec sa version du programme.
 
 Dijkstra répondra lui aussi, par [une note lapidaire](./summary.md), intitulée "On a Somewhat disappointing correspondence".
 > The whole correspondence was carried out at a level that vividly reminded me of the intellectual climate of twenty years age, as if stagnation were the major characteristic off the computing profession, and that was a disappointment.
