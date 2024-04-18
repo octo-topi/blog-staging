@@ -86,7 +86,7 @@ Pourtant, on lève une exception dans le use-case
 throw new AlreadyExistingAdminMemberError();
 ```
 
-[source](https://github.com/1024pix/pix/blob/dev/api/lib/domain/usecases/save-admin-member)
+[source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/domain/usecases/save-admin-member.js#L22)
 
 ```javascript
 class AlreadyExistingAdminMemberError extends Domain  Error {
@@ -96,7 +96,7 @@ class AlreadyExistingAdminMemberError extends Domain  Error {
 }
 ```
 
-[source](https://github.com/1024pix/pix/blob/dev/api/lib/domain/errors.js#L18-L18)
+[source](https://github.com/1024pix/pix/blob/4e035ce1c9b58db20a5efd00c634f4ed2339afbd/api/lib/domain/errors.js#L18-L18)
 
 Pourquoi ? Dans l'architecture existante, le use-case est appelé par un contrôleur HTTP, lui-même appelé par le routeur du framework, HapiJs.
 Si nous suivons les préconisations de la littérature, le use-case devrait renvoyer un code retour au contrôleur, qui se chargerait de répondre une 422. Ce n'est pas le cas ici, mais le use-case pourrait déléguer la vérification à un service : ce service devrait renvoyer un code retour au use-case, qui lui-même le renverrait au contrôleur. Cela rajouterait du code avec peu de valeur ajoutée à plusieurs endroits. Nous avons donc exploité la fonctionnalité de hook du framework, pour intercepter l'exception avant de répondre à l'utilisateur : nous n'avons qu'à la transformer en réponse 422.
@@ -110,7 +110,7 @@ function handleDomainAndHttpErrors( request, errorManager) {
 }
 ```
 
-[source](https://github.com/1024pix/pix/blob/dev/api/lib/application/pre-response-utils.js)
+[source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/application/pre-response-utils.js)
 
 ```javascript
 if (error instanceof DomainErrors.AlreadyExistingAdminMemberError) {
@@ -120,16 +120,16 @@ if (error instanceof DomainErrors.AlreadyExistingAdminMemberError) {
 
 [source](https://github.com/1024pix/pix/blob/dev/api/lib/application/error-manager.js#L349-L351)
 
-Ce compromis fonctionne bien, car la même stratégie est appliquée sur tous les use-case et que la définition du cas alternatif est partagée dans les équipes. Les exceptions sont déclarées dans un dossier dédié dans le domaine, et gérée par un code générique. Le fait que le use-case lève une exception [est testé unitairement](https://github.com/1024pix/pix/blob/dev/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76), tout comme le code de gestion de l'exception.
+Ce compromis fonctionne bien, car la même stratégie est appliquée sur tous les use-case et que la définition du cas alternatif est partagée dans les équipes. Les exceptions sont déclarées dans un dossier dédié dans le domaine, et gérée par un code générique. Le fait que le use-case lève une exception [est testé unitairement](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76), tout comme le code de gestion de l'exception.
 
 Pour expliciter les raisons de ce choix, qui peut surprendre les nouveaux venus, on pourrait :
 
-- mettre à disposition [un ADR](https://github.com/GradedJestRisk/pix-tools/blob/master/adr/handle-alternative-scenario.md) ;
+- mettre à disposition [un ADR](https://github.com/GradedJestRisk/pix-tools/blob/e0478debe0d5454fe75844e4997fe279bac91d92/adr/handle-alternative-scenario.md) ;
 - ajouter une règle de lint qui autorise explicitement à lever les erreurs dans les use-case, et l'interdire ailleurs.
 
 ### Appel HTTP en erreur - Retourner une valeur
 
-<https://github.com/1024pix/pix/blob/dev/api/lib/infrastructure/http/http-agent.js>
+[source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/infrastructure/http/http-agent.js)
 
 Pour expliciter les raisons de ce choix, qui peut surprendre les nouveaux venus, on pourrait :
 

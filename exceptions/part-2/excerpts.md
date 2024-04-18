@@ -14,7 +14,7 @@ Nevertheless, I did it here to give you a taste, so you may have a chance of rea
 ## Code complete
 
 > You might think the debate related to gotos is extinct, but (...) the goto is still alive and well and living deep in your company’s server. Moreover, modern equivalents of the goto debate still crop up in various guises, including debates about multiple returns, multiple loop exits, named loop exits, error processing, and exception handling.
-
+>
 > Exceptions have an attribute in common with inheritance: used judiciously, they can reduce complexity. Used imprudently, they can make code almost impossible to follow. This section contains suggestions for realizing the benefits of exceptions and avoiding the difficulties often associated with them.
 >
 > * Use exceptions to notify other parts of the program about errors that should not be ignored
@@ -31,7 +31,8 @@ Nevertheless, I did it here to give you a taste, so you may have a chance of rea
 
 ## Clean code
 
-Chapter "Error handling" 's headings are the following
+Chapter "Error handling" 's headings are the following :
+
 * Use Exceptions Rather Than Return Codes
 * Write Your Try-Catch-Finally Statement First
 * Use unchecked exceptions
@@ -42,7 +43,7 @@ Chapter "Error handling" 's headings are the following
 * Don't pass null
 
 > Many code bases are completely dominated by error handling. When I say dominated, I don’t mean that error handling is all that they do. I mean that it is nearly impossible to see what the code does because of all the scattered error handling. Error handling is important, but if it obscures logic, it’s wrong.
-
+>
 > Back in the distant past there were many languages that didn’t have exceptions. In those languages the techniques for handling and reporting errors were limited. You either set an error flag or returned an error code that the caller could check. The problem with these approaches is that they clutter the caller. The caller must check for errors immediately after the call. Unfortunately, it’s easy to forget. For this reason it is better to throw an exception when you encounter an error. The calling code is cleaner. Its logic is not obscured by error handling.
 
 ## How Javascript works
@@ -60,7 +61,7 @@ try {
 > We do not have to check for obscure error codes in every return value. (...)
 > The most popular misuse of exceptions is to use them to communicate normal results. For example, given a function that read a file, a `file not found error` should not be an exception. It is a normal occurrence. Exceptions should only be used for problems that should not be anticipated.
 > Reasoning about error recovery is difficult. So we should go with the pattern that is simple and reliable. Make all the expected outcome into return values. Save the exception for exceptions. (...)
-
+>
 > When something goes seriously wrong, what can a program be expected to do about it ? (...)
 > It is not reasonable to expect, at our current level of technology, that the function can take corrective action. (...)
 > The details in the exception object might be important ands useful for the programmer to know. That information is instead delivered to a function that can make no good use of it. We have corrupted the information flow. That information should be sent to the programmer, perhaps in the form of a journal entry. Instead, it is sent down the call stack, where it can be misunderstood and forgotten.

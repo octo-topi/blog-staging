@@ -23,6 +23,7 @@ Dijkstra est un chercheur en informatique avec une solide base en mathématiques
 Il s'intéresse aussi à la preuve de programme. La preuve de programme, comme la preuve de théorème en mathématique, cherche à démontrer qu'un énoncé est vrai pour toutes les valeurs possibles. On peut prouver qu'un algorithme, par exemple le crible d'Ératosthène, permet d'obtenir tous les N nombres premiers entre 0 et N.
 
 Il remarque que certaines instructions, appelées structures de contrôle, sont faciles à utiliser dans les preuves :
+
 - assignation : `=`
 - sélection : `if`
 - répétition : `for`
@@ -31,7 +32,7 @@ Toutes, sauf une : l'instruction `GOTO`. Celle-ci permet de transférer le contr
 
 À cette époque, certains langages (PL/1, FORTRAN) ne disposent pas de mots-clefs pour certaines structures de contrôle : le `GOTO` permet de les implémenter.
 
-```
+```text
 0: BEGIN
 1: <DO_SOMETHING_WITH_N>
 2: IF N > 0 THEN GOTO 1;
