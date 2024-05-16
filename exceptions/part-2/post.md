@@ -72,7 +72,11 @@ Si l'on suit Martin Fowler et Douglas Crockford, nous utiliserions des valeurs d
 - pour le premier cas, on utilise des exceptions ;
 - pour le deuxième cas, on utilise des valeurs de retour.
 
-Voyons pourquoi, et aussi comment matérialiser les raisons de ce choix.
+Nous verrons les raisons de ce choix, mais aussi comment matérialiser les raisons de ce choix :
+- écrire des [ADR](https://github.com/1024pix/pix/blob/656e609745d36ead5b33695da6c5272c04bb9272/docs/adr/0001-enregistrer-les-decisions-concernant-l-architecture.md);
+- les incorporer à un standard de code, implémenté sous forme de linter. 
+
+Ainsi, les nouveaux venus peuvent s'approprier ces décisions. Et si le contexte change, la solution peut être revue en connaissance de cause.
 
 ### Cas 1: Scénario alternatif dans les use-cases - lever une exception
 
@@ -97,12 +101,16 @@ throw new AlreadyExistingAdminMemberError();
 
 
 ```javascript
-
+class AlreadyExistingAdminMemberError extends DomainError {
+  constructor(message = 'Cet agent a déjà accès') {
+    super(message);
+  }
+}
 ```
 
 [source](https://github.com/1024pix/pix/blob/4e035ce1c9b58db20a5efd00c634f4ed2339afbd/api/lib/domain/errors.js#L18-L18)
 
-Parce que la solution nous a semblé plus concise et plus fiable : un hook général du routeur du framework intercepte l'exception, et la transforme en réponse HTTP 422.
+Parce que la solution nous a semblé plus concise et plus fiable : un hook général du routeur du framework intercepte l'exception, et la transforme en réponse HTTP 422. Ainsi, le use-case retourne toujours une valeur qui correspond au cas nominal, c'est à dire des données au format JSON. Le controller n'a pas à inspecter la valeur de retour pour déterminer s'il doit répondre une 422, ou sérialiser les données dans une 200.
 
 ```javascript
 server.ext('onPreResponse', preResponseUtils.handleDomainAndHttpErrors);
@@ -136,7 +144,7 @@ Ce compromis fonctionne bien, car toutes les équipes ont la même définition d
 Pour expliciter les raisons de ce choix, qui surprend les nouveaux venus, on pourrait :
 
 - mettre à disposition [un ADR](https://github.com/GradedJestRisk/pix-tools/blob/e0478debe0d5454fe75844e4997fe279bac91d92/adr/handle-alternative-scenario.md) ;
-- ajouter une règle de lint qui autorise explicitement à lever les erreurs dans les use-case, et l'interdire ailleurs.
+- ajouter une règle de lint qui autorise explicitement à lever les erreurs qui héritent de `Domain` dans les use-case, et l'interdire ailleurs.
 
 ### Cas 2 : Appel HTTP d'une API externe en erreur - Retourner une valeur
 
@@ -175,3 +183,11 @@ Pour que cette solution soit utilisée sans effort, on a encapsulé la librairie
 - qui renvoie au module et aux raisons de son choix dans un [ADR](https://github.com/1024pix/pix/blob/701407fd8694666b6bb9042eb15bdef42b2a135f/docs/adr/0024-encapsuler-appel-http.md) qui explicite les raisons de ce choix.
 
 ## Conclusion
+
+Nous avons vu que le quotidien du développeur est rempli de micro-décisions de design, dont font partie l'usage des exceptions. Ces décisions sont prises à partir de ses compétences générales, transposables dans ses expériences professionnelles successives, adaptées au contexte de sa mission actuelle. 
+
+Pour prendre les meilleures décisions, un dialogue doit tout d'abord avoir lieu au sein de l'équipe. Une fois la solution décidée, elle doit être vérifiée par des tests automatiques, par exemple des linter.
+
+Finalement, pour que cette connaissance ne soit pas perdue, et que la solution puisse être reconsidérée, une documentation doit être produite. Pix a choisi, pour éviter le phénomène bien connu de [documentation inadaptée](https://blog.octo.com/le-jour-ou-la-documentation-a-disparu), de le documenter sous forme [d'ADR](https://blog.octo.com/architecture-decision-record).
+
+Certains d'entre-vous auront reconnu le principe de partage en continu des connaissances, ou "Documentation vivante", de [Cyrille Martraire](https://github.com/cyriux). Et maintenant, GOTO practice !
