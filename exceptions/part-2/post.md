@@ -42,7 +42,7 @@ La gestion des erreurs est donc une exigence fonctionnelle. McConnell liste sur 
 
 ### Utiliser rarement des exceptions
 
-Plus récemment (2018), dans "How Javascript works", Crockford est [très critique](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#how-javascript-works) envers l'usage actuel des exceptions. Dans le même style radical que dans "The Good Parts", il explique que les exceptions ont été détournées de leur but initial, la gestion des erreurs, pour être utilisée comme n'importe quelle structure de contrôle. Il prescrit d'utiliser des codes de retour dans la plupart des cas, et de garder les exceptions pour les seuls cas "désespérés".
+Plus récemment (2018), dans "How Javascript works", Crockford est [très critique](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#how-javascript-works) envers l'usage actuel des exceptions. Dans le même style radical que dans "The Good Parts", il explique que les exceptions ont été détournées de leur but initial, la gestion des erreurs, pour être utilisées comme n'importe quelle structure de contrôle. Il prescrit d'utiliser des codes de retour dans la plupart des cas, et de garder les exceptions pour les seuls cas "désespérés".
 
 \> Raisonner sur la récupération en cas d'erreur est difficile. Nous devrions utiliser une solution simple et fiable. Renvoyez dans les valeurs de retours ce à quoi vous vous attendez. Gardez les exceptions pour les exceptions.
 
@@ -60,7 +60,7 @@ C'est un peu comme le principe : "Si tout est important, rien n'est important". 
 
 ## La règle et ses exceptions : deux exemples
 
-Assez parlé, voyons des cas pratiques. Ils sont tirés de l'API REST en NodeJs de l'application Pix. Elle est accessible au grand public, aussi bien l'[application](https://github.com/1024pix/pix) en elle-même que [son code source](https://github.com/1024pix/pix). En ligne depuis 8 ans, utilisée par des millions d'utilisateurs et développée par 50 développeurs répartis dans plusieurs équipes, c'est un cas représentatif.
+Assez parlé, voyons des cas pratiques. Ils sont tirés de l'API REST en NodeJs de l'application Pix. Elle est accessible au grand public, aussi bien l'[application](https://app.pix.fr) en elle-même que [son code source](https://github.com/1024pix/pix). En ligne depuis 8 ans, utilisée par des millions d'utilisateurs et développée par 50 développeurs répartis dans plusieurs équipes, c'est un cas représentatif.
 
 Les deux cas pratiques concernent les scénarios alternatifs, c'est à dire qu'on s'attend à ce qu'ils se produisent lors du fonctionnement normal de l'application :
 
