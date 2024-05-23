@@ -5,7 +5,7 @@
     "lint:markdown": "markdownlint --config .mardownlint.jsonc '**/*.md'",
     "lint:link": "find exceptions -name \\*.md -print0 | xargs -0 -n1 markdown-link-check",
     "lint:fix": "markdownlint --config .mardownlint.jsonc --fix '**/*.md'",
-    "generate-html": "pandoc --from markdown_strict --to html exceptions/part-2/post.md > exceptions/part-2/post.html"
+    "generate-html": "shopt -s globstar;  for file in ./**/post.md; do pandoc --from markdown_strict --to html $file --output=\"${file%.md}.html\"; done "
   },
   "license": "ISC",
   "devDependencies": {
