@@ -56,7 +56,7 @@ Tout le monde est à peu près d'accord sur ce qu'est un cas nominal, c'est quan
 
 Si les développeurs se mettaient d'accord, de préférence avec l'avis du métier, sur ce qui constitue un cas exceptionnel, le code aurait plus de chances d'être lisible. En effet, si l'on suit l'avis de Michael Feathers, les cas nominaux et alternatifs doivent constituer le corps du programme (`the main logic`). Si une grande partie du code comporte des `exception`, ce n'est pas pour gérer des cas exceptionnels, mais des cas alternatifs. Le traitement de ces cas alternatifs doit être réintégré au code principal sous forme de codes de retour. Vous suivez ?
 
-C'est un peu comme le principe : "Si tout est important, rien n'est important". Les cas exceptionnels sont exceptionnels parce qu'ils sont peu nombreux, parce qu'ils n'arrivent pas souvent, parce qu'en général on suit la règle. S'ils arrivent trop souvent, ils deviennent partie de la règle et ne font plus exception.
+C'est un peu comme le principe : "Si tout est important, rien n'est important". Les cas exceptionnels sont exceptionnels parce qu'ils sont peu nombreux, n'arrivent pas souvent. La plupart du temps, on suit la règle. S'ils arrivent souvent, ils ne font plus exception - ils deviennent partie de la règle.
 
 ## La règle et ses exceptions : deux exemples
 
@@ -91,15 +91,33 @@ Le corps principal du traitement effectue ces vérifications, mais si l'une d'el
 Prenons l'exemple de l'ajout d'un administrateur depuis une IHM d'administration, sur un `POST` de la route `/api/admin/admin-members`.
 Plusieurs demandes identiques peuvent être envoyées depuis l'IHM d'administration, par exemple si plusieurs utilisateurs effectuent la même demande en même temps. Ce n'est pas un scénario nominal, mais rien d'exceptionnel non plus : on signale à l'utilisateur que sa demande ne peut aboutir, avec une réponse `UnprocessableEntityError` (422).
 
-Le use-case est appelé par un contrôleur HTTP, lui-même appelé par le routeur du framework, HapiJs. Si nous suivons les préconisations de Martin Fowler, le use-case devrait renvoyer une valeur de retour au contrôleur, qui se chargerait de répondre une 422. Mais on observe, à la place, que le use-case lève une exception, normalement réservée aux scénarios exceptionnels. Pourquoi ?
+Le use-case est appelé par un contrôleur HTTP, lui-même appelé par le routeur du framework, HapiJs. Si nous suivons les préconisations de Martin Fowler, le use-case devrait renvoyer une valeur de retour au contrôleur, qui se chargerait de répondre une 422. 
 
+Ce qui se passe ici est différent :
+- le use-case lève une exception ;
+- un hook général du routeur du framework intercepte l'exception et appelle un handler ;
+- ce handler instancie une réponse HTTP 422.
+
+Controller
+````javascript
+  const attributes = await adminMemberSerializer.deserialize(request.payload);
+  const savedAdminMember = await usecases.saveAdminMember(attributes);
+  return h.response(dependencies.adminMemberSerializer.serialize(savedAdminMember)).created();
+````
+[source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/application/admin-members/admin-member-controller.js#L30)
+
+Use-case
 ```javascript
-
-throw new AlreadyExistingAdminMemberError();
+const saveAdminMember = async function () {
+    if(memberExists) {
+        throw new AlreadyExistingAdminMemberError();
+    }
+}
 ```
 
 [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/domain/usecases/save-admin-member.js#L22)
 
+Erreur 
 ```javascript
 class AlreadyExistingAdminMemberError extends DomainError {
   constructor(message = 'Cet agent a déjà accès') {
@@ -110,13 +128,13 @@ class AlreadyExistingAdminMemberError extends DomainError {
 
 [source](https://github.com/1024pix/pix/blob/4e035ce1c9b58db20a5efd00c634f4ed2339afbd/api/lib/domain/errors.js#L18-L18)
 
-Parce que la solution nous a semblé plus concise et plus fiable : un hook général du routeur du framework intercepte l'exception, et la transforme en réponse HTTP 422. Ainsi, le use-case retourne toujours une valeur qui correspond au cas nominal, c'est à dire des données au format JSON. Le controller n'a pas à inspecter la valeur de retour pour déterminer s'il doit répondre une 422, ou sérialiser les données dans une 200.
-
+Interception dans le hook
 ```javascript
 server.ext('onPreResponse', preResponseUtils.handleDomainAndHttpErrors);
 ```
 
 [source](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/config/server-setup-error-handling.js#L30)
+
 
 ```javascript
 function handleDomainAndHttpErrors( request, errorManager) {
@@ -129,6 +147,8 @@ function handleDomainAndHttpErrors( request, errorManager) {
 
 [source](https://github.com/1024pix/pix/blob/3ba616d8f47e16202533fc6da2536d9b27f1d57a/api/lib/application/pre-response-utils.js#L14)
 
+Mapping de l'exception vers une réponse 422
+
 ```javascript
 function handle(error) {
     if (error instanceof DomainErrors.AlreadyExistingAdminMemberError) {
@@ -138,6 +158,14 @@ function handle(error) {
 ```
 
 [source](https://github.com/1024pix/pix/blob/dev/api/lib/application/error-manager.js#L349-L351)
+
+Cette solution met en avant le scénario nominal :
+- le use-case retourne des données ;
+- le controller sérialise ces données dans le format JSON.
+
+En plaçant la gestion des scénarios alternatifs en dehors du controller, on lui évite d'inspecter la valeur de retour pour déterminer :
+- s'il est dans un cas alternatif : répondre une 422 ;
+- s'il est dans un scénario nominal : sérialiser les données et répondre une 200.
 
 Ce compromis fonctionne bien, car toutes les équipes ont la même définition de ce qu'est un scénario alternatif, et que la même solution est appliquée sur tous les use-case. Les exceptions sont déclarées dans un dossier dédié et gérée par un code générique. Le fait que le use-case lève une exception [est testé unitairement](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76), tout comme [le code](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/tests/unit/application/pre-response-utils_test.js#L33) qui génère la réponse HTTP.
 
