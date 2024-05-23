@@ -50,11 +50,11 @@ Plus récemment (2018), dans "How Javascript works", Crockford est [très critiq
 
 Avant de passer au cas pratique, de découvrir quelle est la bonne solution parmi ces trois livres, faisons un point de vocabulaire : qu'entendons-nous par exception ?
 
-Tous les développeurs connaissent le mot-clef `exception` présent dans la plupart des langages de programmation, et l'utilisent aussi pour désigner des situations "inattendues". Les auteurs ci-dessus insistent sur la notion d'erreur : toutes les erreurs (rencontrées par le processus au runtime) ne lèvent pas des `exception` (dans le langage). Pour clarifier ce point, je propose de reprendre les types de cas d'utilisation (use-case) en UML : nominal, alternatif, exceptionnel. 
+Tous les développeurs connaissent le mot-clef `exception` présent dans la plupart des langages de programmation, et l'utilisent aussi pour désigner des situations "inattendues". Les auteurs ci-dessus insistent sur la notion d'erreur : toutes les erreurs (rencontrées par le processus au runtime) ne lèvent pas des `exception` (dans le langage). Pour clarifier ce point, je propose de reprendre les types de cas d'utilisation (use-case) en UML : nominal, alternatif, exceptionnel.
 
 Tout le monde est à peu près d'accord sur ce qu'est un cas nominal, c'est quand tout va bien. Par contre, ce qui distingue un cas alternatif et un cas exceptionnel est trop souvent une affaire de goût personnel. Crockford dit que, dans le cas d'un programme qui lit un fichier, le fait que le fichier n'existe pas n'est pas un cas exceptionnel, mais un cas alternatif. Et vous ?
 
-Si les développeurs se mettaient d'accord, de préférence avec l'avis du métier, sur ce qui constitue un cas exceptionnel, le code aurait plus de chances d'être lisible. En effet, si l'on suit l'avis de Michael Feathers, les cas nominaux et alternatifs doivent constituer le corps du programme (`the main logic`). Si une grande partie du code comporte des `exception`, ce n'est pas pour gérer des cas exceptionnels, mais des cas alternatifs. Le traitement de ces cas alternatifs doit être réintégré au code principal sous forme de codes de retour. Vous suivez ? 
+Si les développeurs se mettaient d'accord, de préférence avec l'avis du métier, sur ce qui constitue un cas exceptionnel, le code aurait plus de chances d'être lisible. En effet, si l'on suit l'avis de Michael Feathers, les cas nominaux et alternatifs doivent constituer le corps du programme (`the main logic`). Si une grande partie du code comporte des `exception`, ce n'est pas pour gérer des cas exceptionnels, mais des cas alternatifs. Le traitement de ces cas alternatifs doit être réintégré au code principal sous forme de codes de retour. Vous suivez ?
 
 C'est un peu comme le principe : "Si tout est important, rien n'est important". Les cas exceptionnels sont exceptionnels parce qu'ils sont peu nombreux, parce qu'ils n'arrivent pas souvent, parce qu'en général on suit la règle. S'ils arrivent trop souvent, ils deviennent partie de la règle et ne font plus exception.
 
@@ -73,8 +73,9 @@ Si l'on suit Martin Fowler et Douglas Crockford, nous utiliserions des valeurs d
 - pour le deuxième cas, on utilise des valeurs de retour.
 
 Nous verrons les raisons de ce choix, mais aussi comment matérialiser les raisons de ce choix :
+
 - écrire des [ADR](https://github.com/1024pix/pix/blob/656e609745d36ead5b33695da6c5272c04bb9272/docs/adr/0001-enregistrer-les-decisions-concernant-l-architecture.md);
-- les incorporer à un standard de code, implémenté sous forme de linter. 
+- les incorporer à un standard de code, implémenté sous forme de linter.
 
 Ainsi, les nouveaux venus peuvent s'approprier ces décisions. Et si le contexte change, la solution peut être revue en connaissance de cause.
 
@@ -88,7 +89,7 @@ Lors du traitement d'une requête API, un chemin nominal est attendu :
 
 Le corps principal du traitement effectue ces vérifications, mais si l'une d'elles échoue, il initie une exception.
 Prenons l'exemple de l'ajout d'un administrateur depuis une IHM d'administration, sur un `POST` de la route `/api/admin/admin-members`.
-Plusieurs demandes identiques peuvent être envoyées depuis l'IHM d'administration, par exemple si plusieurs utilisateurs effectuent la même demande en même temps. Ce n'est pas un scénario nominal, mais rien d'exceptionnel non plus : on signale à l'utilisateur que sa demande ne peut aboutir, avec une réponse `UnprocessableEntityError` (422). 
+Plusieurs demandes identiques peuvent être envoyées depuis l'IHM d'administration, par exemple si plusieurs utilisateurs effectuent la même demande en même temps. Ce n'est pas un scénario nominal, mais rien d'exceptionnel non plus : on signale à l'utilisateur que sa demande ne peut aboutir, avec une réponse `UnprocessableEntityError` (422).
 
 Le use-case est appelé par un contrôleur HTTP, lui-même appelé par le routeur du framework, HapiJs. Si nous suivons les préconisations de Martin Fowler, le use-case devrait renvoyer une valeur de retour au contrôleur, qui se chargerait de répondre une 422. Mais on observe, à la place, que le use-case lève une exception, normalement réservée aux scénarios exceptionnels. Pourquoi ?
 
@@ -98,7 +99,6 @@ throw new AlreadyExistingAdminMemberError();
 ```
 
 [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/domain/usecases/save-admin-member.js#L22)
-
 
 ```javascript
 class AlreadyExistingAdminMemberError extends DomainError {
@@ -150,7 +150,7 @@ Pour expliciter les raisons de ce choix, qui surprend les nouveaux venus, on pou
 
 Lorsqu'une API externe est appelée, par exemple celle de Pole Emploi pour le SSO, on s'attend à ce qu'elle ne soit pas toujours disponible, ou qu'elle nous renvoie de temps en temps des erreurs (code 4**). Encore une fois, si nous suivons les préconisations de Martin Fowler, la fonction devrait devrait renvoyer une valeur de retour plutôt que de lever une exception.
 
-Cette fois-ci, on constate que c'est ce que l'on a fait. Si un appel API ne s'achève pas avec succès, on renvoie un objet. Celui-ci contient tous les détails de la réponse de l'APi externe. Notez en passant que, pour faire cela, on doit intercepter les exceptions de la librairie HTTP, axios. 
+Cette fois-ci, on constate que c'est ce que l'on a fait. Si un appel API ne s'achève pas avec succès, on renvoie un objet. Celui-ci contient tous les détails de la réponse de l'APi externe. Notez en passant que, pour faire cela, on doit intercepter les exceptions de la librairie HTTP, axios.
 
 ```javascript
 try{
@@ -184,7 +184,7 @@ Pour que cette solution soit utilisée sans effort, on a encapsulé la librairie
 
 ## Conclusion
 
-Nous avons vu que le quotidien du développeur est rempli de micro-décisions de design, dont font partie l'usage des exceptions. Ces décisions sont prises à partir de ses compétences générales, transposables dans ses expériences professionnelles successives, adaptées au contexte de sa mission actuelle. 
+Nous avons vu que le quotidien du développeur est rempli de micro-décisions de design, dont font partie l'usage des exceptions. Ces décisions sont prises à partir de ses compétences générales, transposables dans ses expériences professionnelles successives, adaptées au contexte de sa mission actuelle.
 
 Pour prendre les meilleures décisions, un dialogue doit tout d'abord avoir lieu au sein de l'équipe. Une fois la solution décidée, elle doit être vérifiée par des tests automatiques, par exemple des linter.
 

@@ -3,37 +3,83 @@
 You'll find below excerpts from the following texts:
 
 * 1993 : McConnell, Code complete;
+* 2007 : Kent Beck, Implementations patterns;
 * 2008 : Robert Matin, Clean code;
 * 2018 : Douglas Crockford, How Javascript works.
 
-By searching, you can always find someone who made a well-sounding statement that confirms your point of view - and, on every topic, it is possible to find another dead thinker who said the exact opposite.
-Nassim Nicholas Taleb, The Black Swan
-
-The mere act of choosing one part of a text is subjective and arbitrary, and fundamentally misleading : the author make its point in a dozen pages, and I choose the part I liked, presenting it as the essence of its thought.
-
-Nevertheless, I did it here to give you a taste, so you may have a chance of reading the text yourself.
-
 ## Code complete
 
-> You might think the debate related to gotos is extinct, but (...) the goto is still alive and well and living deep in your company’s server. Moreover, modern equivalents of the goto debate still crop up in various guises, including debates about multiple returns, multiple loop exits, named loop exits, error processing, and exception handling.
->
+### Part II : Creating High-Quality Code
+
+#### Chapter 8: Defensive Programming
+
+##### Section 8.4 :  Exceptions
+
 > Exceptions have an attribute in common with inheritance: used judiciously, they can reduce complexity. Used imprudently, they can make code almost impossible to follow. This section contains suggestions for realizing the benefits of exceptions and avoiding the difficulties often associated with them.
->
-> * Use exceptions to notify other parts of the program about errors that should not be ignored
-> * Throw an exception only for conditions that are truly exceptional
-> * Don’t use an exception to pass the buck (if an error condition can be handled locally, handle it locally)
-> * Avoid throwing exceptions in constructors and destructors unless you catch them in the same place
-> * Throw exceptions at the right level of abstraction
-> * Include in the exception message all information that led to the exception
-> * Avoid empty catch blocks
-> * Know the exceptions your library code throws
-> * Consider building a centralized exception reporter
-> * Standardize your project’s use of exceptions
-> * Consider alternatives to exceptions
+
+* Use exceptions to notify other parts of the program about errors that should not be ignored
+* Throw an exception only for conditions that are truly exceptional
+* Don’t use an exception to pass the buck (if an error condition can be handled locally, handle it locally)
+* Avoid throwing exceptions in constructors and destructors unless you catch them in the same place
+* Throw exceptions at the right level of abstraction
+* Include in the exception message all information that led to the exception
+* Avoid empty catch blocks
+* Know the exceptions your library code throws
+* Consider building a centralized exception reporter
+* Standardize your project’s use of exceptions
+* Consider alternatives to exceptions
+
+### Part IV: Statements
+
+#### Chapter 17: Unusual Control Structures
+
+##### Section 17.3 : goto
+
+> You might think the debate related to gotos is extinct, but (...) the goto is still alive and well and living deep in your company’s server. Moreover, modern equivalents of the goto debate still crop up in various guises, including debates about multiple returns, multiple loop exits, named loop exits, error processing, and exception handling.
+
+## Implementations patterns
+
+### Chapter 7, Behavior
+
+#### Exceptional Flow
+
+> Programs are easiest to read if the statements execute one after another. Readers can use comfortable and familiar prose-reading skills to understand the intent of the program. Sometimes, though, there are multiple paths through a program. Expressing all paths equally would result in a bowl of worms, with flags set here and used there and return values with special meanings. Answering the basic question, “What statements are executed?” becomes an exercise in a combination of archaeology and logic. Pick the main flow. Express it clearly. Use exceptions to express other paths.
+
+#### Guard clauses
+
+Version without guard clause
+
+```java
+void initialize() {
+    if (!isInitialized()) {
+        foo();
+    } 
+}
+```
+
+Version with guard clause
+
+```java
+void initialize() {
+    if (isInitialized()) return;
+    foo();
+```
+
+> If-then-else expresses alternative, equally important control flows. A guard clause is appropriate for expressing a different situation, one in which one of the control flows is more important than the other. Back in the old days of programming, a commandment was issued: each routine shall have a single entry and a single exit. This was to prevent the confusion possible when jumping into and out of many locations in the same routine. It made good sense when applied to FORTRAN or assembly language programs written with lots of global data where even understanding which statements were executed was hard work. In Java, with small methods and mostly local data, it is needlessly conservative. However, this bit of programming folklore, thoughtlessly obeyed, prevents the use of guard clauses.
+
+#### Exceptions
+
+> They make it difficult to trace the flow of control, since adjacent statements can be in different methods, objects, or packages. Code that could be written with conditionals and messages, but is implemented with exceptions, is fiendishly difficult to read as you are forever trying to figure out what more is going on than a simple control structure. In short, express control flows with sequence, messages, iteration, and conditionals (in that order) wherever possible. Use exceptions when not doing so would confuse the simply communicated main flow.
 
 ## Clean code
 
-Chapter "Error handling" 's headings are the following :
+### Chapter Error handling
+
+#### Introduction
+
+> Many code bases are completely dominated by error handling. When I say dominated, I don’t mean that error handling is all that they do. I mean that it is nearly impossible to see what the code does because of all the scattered error handling. Error handling is important, but if it obscures logic, it’s wrong.
+
+Headings are the following :
 
 * Use Exceptions Rather Than Return Codes
 * Write Your Try-Catch-Finally Statement First
@@ -44,13 +90,17 @@ Chapter "Error handling" 's headings are the following :
 * Don't return null
 * Don't pass null
 
-> Many code bases are completely dominated by error handling. When I say dominated, I don’t mean that error handling is all that they do. I mean that it is nearly impossible to see what the code does because of all the scattered error handling. Error handling is important, but if it obscures logic, it’s wrong.
->
+### Section "Use Exceptions Rather Than Return Codes"
+
 > Back in the distant past there were many languages that didn’t have exceptions. In those languages the techniques for handling and reporting errors were limited. You either set an error flag or returned an error code that the caller could check. The problem with these approaches is that they clutter the caller. The caller must check for errors immediately after the call. Unfortunately, it’s easy to forget. For this reason it is better to throw an exception when you encounter an error. The calling code is cleaner. Its logic is not obscured by error handling.
 
->  We can write robust clean code if we see error handling as a separate concern, something that is viewable independently of our main logic. To the degree that we are able to do that, we can reason about it independently, and we can make great strides in the maintainability of our code.
+### Conclusion
+
+> We can write robust clean code if we see error handling as a separate concern, something that is viewable independently of our main logic. To the degree that we are able to do that, we can reason about it independently, and we can make great strides in the maintainability of our code.
 
 ## How Javascript works
+
+### Chapter exceptions
 
 > There is often an implicit assumption in our programs that everything will go always go right, but even an optimist knows that sometimes thing can go wrong. (...) There is a possibility that the function we call might fail in an unexpected way.  (...) The most popular approach to this problem is exception handling with attempts to free us to program optimistically.
 

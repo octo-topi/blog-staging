@@ -1,6 +1,5 @@
 # Staging
 
-
 ## Constraints
 
 OCTO blog use Google Docs and custom scripts.
@@ -46,7 +45,6 @@ Add 2 line returns after quotes.
 
 Publish.
 
-
 ## Monitor
 
-https://github.com/octo-topi/blog-staging/graphs/traffic
+[](https://github.com/octo-topi/blog-staging/graphs/traffic)
