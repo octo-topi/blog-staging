@@ -58,47 +58,58 @@ Si les développeurs se mettaient d'accord, de préférence avec l'avis du méti
 
 C'est un peu comme le principe : "Si tout est important, rien n'est important". Les cas exceptionnels sont exceptionnels parce qu'ils sont peu nombreux, n'arrivent pas souvent. La plupart du temps, on suit la règle. S'ils arrivent souvent, ils ne font plus exception - ils deviennent partie de la règle.
 
-## La règle et ses exceptions : deux exemples
+## En pratique : deux exemples
 
 Assez parlé, voyons des cas pratiques. Ils sont tirés de l'API REST en NodeJs de l'application Pix. Elle est accessible au grand public, aussi bien l'[application](https://app.pix.fr) en elle-même que [son code source](https://github.com/1024pix/pix). En ligne depuis 8 ans, utilisée par des millions d'utilisateurs et développée par 50 développeurs répartis dans plusieurs équipes, c'est un cas représentatif.
 
-Les deux cas pratiques concernent les scénarios alternatifs, c'est à dire qu'on s'attend à ce qu'ils se produisent lors du fonctionnement normal de l'application :
+Les cas pratiques couvrent deux implémentations possibles :
+- lever une exception ;
+- renvoyer une valeur de retour.
 
-- le premier cas concerne les scénarios alternatifs dans les use-case (architecture de type Clean architecture);
-- le deuxième cas concerne l'appel d'API externes en erreur.
+Ils ont été implémentés à des moments différents de ma participation au projet : 
+- bien avant que je rejoigne le projet ;
+- pendant que j'y participais.
 
-Si l'on suit Martin Fowler et Douglas Crockford, nous utiliserions des valeurs de retour, pas des exceptions. Quel choix a été fait ? Les deux, mon capitaine !
+Nous essaierons de savoir à quelle règle théorique se rattachent ces cas.
 
-- pour le premier cas, on utilise des exceptions ;
-- pour le deuxième cas, on utilise des valeurs de retour.
-
-Nous verrons les raisons de ce choix, mais aussi comment matérialiser les raisons de ce choix :
-
+Nous verrons aussi comment nous pourrions matérialiser les raisons de ce choix :
 - écrire des [ADR](https://github.com/1024pix/pix/blob/656e609745d36ead5b33695da6c5272c04bb9272/docs/adr/0001-enregistrer-les-decisions-concernant-l-architecture.md);
 - les incorporer à un standard de code, implémenté sous forme de linter.
 
 Ainsi, les nouveaux venus peuvent s'approprier ces décisions. Et si le contexte change, la solution peut être revue en connaissance de cause.
 
-### Cas 1: Scénario alternatif dans les use-cases - lever une exception
+### Cas 1 : Lever une exception dans les use-case
 
-Lors du traitement d'une requête API, un chemin nominal est attendu :
+#### Implémentation
+
+Lors du traitement d'une requête API, le scénario nominal est le suivant :
 
 - l'utilisateur a les droits d'effectuer cet appel ;
 - les données fournies par l'utilisateur sont valides ;
 - les données existantes sont compatibles avec la demande effectuée par l'utilisateur.
 
-Le corps principal du traitement effectue ces vérifications, mais si l'une d'elles échoue, il initie une exception.
-Prenons l'exemple de l'ajout d'un administrateur depuis une IHM d'administration, sur un `POST` de la route `/api/admin/admin-members`.
-Plusieurs demandes identiques peuvent être envoyées depuis l'IHM d'administration, par exemple si plusieurs utilisateurs effectuent la même demande en même temps. Ce n'est pas un scénario nominal, mais rien d'exceptionnel non plus : on signale à l'utilisateur que sa demande ne peut aboutir, avec une réponse `UnprocessableEntityError` (422).
+Sur Pix, le corps principal du traitement (en général, le use-case) effectue ces vérifications. Si l'une d'elles échoue, il initie une exception. L'API répond alors à l'utilisateur par un code 4xx.
 
-Le use-case est appelé par un contrôleur HTTP, lui-même appelé par le routeur du framework, HapiJs. Si nous suivons les préconisations de Martin Fowler, le use-case devrait renvoyer une valeur de retour au contrôleur, qui se chargerait de répondre une 422. 
+Prenons l'exemple de l'ajout d'un administrateur depuis une IHM d'administration, via un `POST` de la route `/api/admin/admin-members`. Si plusieurs utilisateurs ajoutent un administrateur depuis l'IHM sur un temps court, on recevra des demandes identiques : la première sera honorée et on renvoie une 201 (Created), les autres seront rejetés avec une 422 (UnprocessableEntityError). J'utilise l'expression "temps court" pour simplifier : tant que le front-end (SPA Ember) n'est pas notifié de la modification de la donnée dans l'API, il permet l'ajout d'un administrateur ; et en l'absence de Websockets, cela ne se produit que lorsque l'utilisateur rafraîchit la page.
 
-Ce qui se passe ici est différent :
-- le use-case lève une exception ;
-- un hook général du routeur du framework intercepte l'exception et appelle un handler ;
-- ce handler instancie une réponse HTTP 422.
+Comment l'API peut-elle répondre un code 422 lorsque le use-case lève une exception ?$
 
-Controller
+Il n'y a pas moins de 7 étapes, aussi je les détaille avant de citer le code : 
+- A - au démarrage du serveur, un hook de pre-response est enregistré ;
+- B - la requête est reçue par le controller et transmise au use-case ;
+- C - le use-case lève une exception ;
+- le framework HapiJs intercepte l'exception et l'encapsule dans une réponse HTTP ;
+- le hook est appellé (sur cette réponse et toutes les autres) ;
+- D - sur cette réponse, le hook détecte qu'une exception a eu lieu ;
+- E - il appelle une fonction de mapping, qui en fonction de l'exception renvoie une réponse personnalisée (ici une 422).
+
+A - Enregistrement du hook
+```javascript
+server.ext('onPreResponse', preResponseUtils.handleDomainAndHttpErrors);
+```
+[source](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/config/server-setup-error-handling.js#L30)
+
+B - Controller
 ````javascript
   const attributes = await adminMemberSerializer.deserialize(request.payload);
   const savedAdminMember = await usecases.saveAdminMember(attributes);
@@ -106,7 +117,7 @@ Controller
 ````
 [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/application/admin-members/admin-member-controller.js#L30)
 
-Use-case
+C - Use-case
 ```javascript
 const saveAdminMember = async function () {
     if(memberExists) {
@@ -114,7 +125,6 @@ const saveAdminMember = async function () {
     }
 }
 ```
-
 [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/domain/usecases/save-admin-member.js#L22)
 
 Erreur 
@@ -125,17 +135,10 @@ class AlreadyExistingAdminMemberError extends DomainError {
   }
 }
 ```
-
 [source](https://github.com/1024pix/pix/blob/4e035ce1c9b58db20a5efd00c634f4ed2339afbd/api/lib/domain/errors.js#L18-L18)
 
-Interception dans le hook
-```javascript
-server.ext('onPreResponse', preResponseUtils.handleDomainAndHttpErrors);
-```
 
-[source](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/config/server-setup-error-handling.js#L30)
-
-
+D - Interception de la réponse dans le hook
 ```javascript
 function handleDomainAndHttpErrors( request, errorManager) {
   const response = request.response;
@@ -144,10 +147,9 @@ function handleDomainAndHttpErrors( request, errorManager) {
   }
 }
 ```
-
 [source](https://github.com/1024pix/pix/blob/3ba616d8f47e16202533fc6da2536d9b27f1d57a/api/lib/application/pre-response-utils.js#L14)
 
-Mapping de l'exception vers une réponse 422
+E - Mapping de l'exception vers une réponse 422
 
 ```javascript
 function handle(error) {
@@ -156,25 +158,46 @@ function handle(error) {
     }
 }
 ```
-
 [source](https://github.com/1024pix/pix/blob/dev/api/lib/application/error-manager.js#L349-L351)
 
-Cette solution met en avant le scénario nominal :
-- le use-case retourne des données ;
-- le controller sérialise ces données dans le format JSON.
+#### Réflexion
 
-En plaçant la gestion des scénarios alternatifs en dehors du controller, on lui évite d'inspecter la valeur de retour pour déterminer :
-- s'il est dans un cas alternatif : répondre une 422 ;
-- s'il est dans un scénario nominal : sérialiser les données et répondre une 200.
+Cette solution était déjà en place lorsque je suis arrivé sur le projet, et cela me semblait relever de la magie. En effet, le framework effectue deux actions que l'on ne voit pas dans le use-case : intercepter l'exception, et inspecter toutes les réponses avant de les renvoyer à l'utilisateur. En contraste, voilà une solution explicite dans le use-case ci-dessous. Elle a le désavantage d'exposer dans le domaine des notions de la couche d'infrastructure (HTTP), une autre solution serait de le faire dans le controller.
 
-Ce compromis fonctionne bien, car toutes les équipes ont la même définition de ce qu'est un scénario alternatif, et que la même solution est appliquée sur tous les use-case. Les exceptions sont déclarées dans un dossier dédié et gérée par un code générique. Le fait que le use-case lève une exception [est testé unitairement](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76), tout comme [le code](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/tests/unit/application/pre-response-utils_test.js#L33) qui génère la réponse HTTP.
+```javascript
+const saveAdminMember = async function () {
+    if(memberExists) {
+        return h.response("Cet agent a déjà accès").code(201)
+    }
+}
+```
 
-Pour expliciter les raisons de ce choix, qui surprend les nouveaux venus, on pourrait :
+Comme les raisons du choix de cette solution ne sont pas documentés, et que la connaissance ne s'est pas transmise oralement, j'avance des hypothèses :
+- le fait que l'utilisateur soit déjà administrateur est un scénario exceptionnel ;
+- une exception est levée pour extraire du use-case et du controller la gestion de ce scénario exceptionnel ;
+- le use-case retourne toujours des données nominales ;
+- le controller n'a pas à inspecter la valeur de retour du use-case : il ne fait que sérialiser les données en JSON ;
 
-- mettre à disposition [un ADR](https://github.com/GradedJestRisk/pix-tools/blob/e0478debe0d5454fe75844e4997fe279bac91d92/adr/handle-alternative-scenario.md) ;
-- ajouter une règle de lint qui autorise explicitement à lever les erreurs qui héritent de `Domain` dans les use-case, et l'interdire ailleurs.
+Si ces hypothèses sont correctes, cet exemple met avant le couplage évoqué par la littérature : le use-case se comporte de cette façon parce qu'un autre composant, à plusieurs couches de là, impose ce contrat de communication. Comme le dit "The pragmatic programmer" :
+> These programs break encapsulation: routines and their callers are more tightly coupled via exception handling.
 
-### Cas 2 : Appel HTTP d'une API externe en erreur - Retourner une valeur
+
+Dans les faits, cette solution est utilisée partout et par toutes les équipes chez Pix.
+Elle est testée unitairement :
+- levée de l'exception par le use-case [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76) ;
+- mapping de l'exception en réponse HTTP [source](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/tests/unit/application/pre-response-utils_test.js#L33).
+
+Mon avis personnel est le suivant : l'utilisation de cette solution technique, passé les premiers jours, est simple. Cependant, la problématique la plus importante n'est pas adressée, car elle se situe en dehors du code : qui décide qu'un scénario métier est alternatif ou exceptionnel ? Comme aucune pratique n'adresse ce sujet, il est tentant de gérer les scénarios alternatifs en levant des exceptions, et donc de perdre toute distinction.
+
+#### Matérialisation
+
+Si personne ne sait pourquoi ce choix a été fait, il est toujours possible de noter nos hypothèses sous forme de rétro-ADR. Au fur et à mesure, on acquiert de plus en plus de connaissances ; et si l'on décide de changer de solution, on le fait en connaissance de cause.
+
+Lorsque je suis arrivé chez Pix, je pensais que cette solution gérait les cas alternatifs et j'avais écrit [cet ADR](https://github.com/GradedJestRisk/pix-tools/blob/e0478debe0d5454fe75844e4997fe279bac91d92/adr/handle-alternative-scenario.md). Avec le temps, mes hypothèses ont changées !
+
+J'ai aussi pensé à ajouter une règle de lint qui autorise explicitement à lever les erreurs qui héritent de `Domain` dans les use-case, et l'interdire ailleurs. Ainsi, on incite à garder les règles de gestion dans les use-case. Le développeur qui lève une erreur de type `Domain` dans un repository pourra choisir de retourner à la place une valeur de retour, ou à ajouter une exception.
+
+### Cas 2 : Retourner une valeur si un appel HTTP échoue
 
 Lorsqu'une API externe est appelée, par exemple celle de Pole Emploi pour le SSO, on s'attend à ce qu'elle ne soit pas toujours disponible, ou qu'elle nous renvoie de temps en temps des erreurs (code 4**). Encore une fois, si nous suivons les préconisations de Martin Fowler, la fonction devrait devrait renvoyer une valeur de retour plutôt que de lever une exception.
 
