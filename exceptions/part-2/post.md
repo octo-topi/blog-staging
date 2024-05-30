@@ -185,6 +185,9 @@ Il existe cependant des cas où les règles de gestion ne sont pas implémentée
 
 [source](https://github.com/1024pix/pix/blob/1acf7dfc227d7ce45e5fc02487c84e88c0c587ed/api/lib/application/preHandlers/assessment-authorization.js#L14)
 
+J'en profite pour évoquer une solution alternative pour que l'appelant puisse gérer un scénario exceptionnel. En programmation fonctionnelle, il existe le pattern `Either` qui permet de gérer des exceptions sans transférer le contrôle : en voilà un exemple [ici](
+https://blog.logrocket.com/javascript-either-monad-error-handling/).
+
 #### Réflexion
 
 Cette solution était déjà en place lorsque je suis arrivé sur le projet, et cela me semblait relever de la magie. En effet, le framework effectue deux actions que l'on ne voit pas dans le use-case : intercepter l'exception, et inspecter toutes les réponses avant de les renvoyer à l'utilisateur. En contraste, voilà une solution explicite dans le use-case ci-dessous. Elle a le désavantage d'exposer dans le domaine des notions de la couche d'infrastructure (HTTP), une autre solution serait de le faire dans le controller.
