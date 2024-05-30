@@ -47,10 +47,7 @@ You'll find below excerpts from the following texts:
 > We suggested that it is good practice to check for every possible error—particularly the unexpected ones. However, in practice this can lead to some pretty ugly code; the normal logic of your program can end up being totally obscured by error handling.
 
 #### What Is Exceptional ?
-> One of the problems with exceptions is knowing when to use them. We believe that exceptions should rarely be used as part of a program’s normal flow; exceptions should be reserved for unexpected events. For example, if your code tries to open a file for reading and that file does not exist, should an exception be raised? Our answer is, “It depends.” If the file should have been there, then an exception is warranted. Something unexpected happened - a file you were expecting to exist seems to have disappeared. On the other hand, if you have no idea whether the file should exist or not, then it doesn’t seem exceptional if you can’t find it, and an error return is appropriate.
-Why do we suggest this approach to exceptions? Well, an exception represents an immediate, nonlocal transfer of control—it’s a kind of cascading goto. Programs that use exceptions as part of their  normal processing suffer from all the readability and maintainability problems of classic spaghetti code. These programs break encapsulation: routines and their callers are more tightly coupled via exception handling.
-
-.
+> One of the problems with exceptions is knowing when to use them. We believe that exceptions should rarely be used as part of a program’s normal flow; exceptions should be reserved for unexpected events. For example, if your code tries to open a file for reading and that file does not exist, should an exception be raised? Our answer is, “It depends.” If the file should have been there, then an exception is warranted. Something unexpected happened - a file you were expecting to exist seems to have disappeared. On the other hand, if you have no idea whether the file should exist or not, then it doesn't seem exceptional if you can’t find it, and an error return is appropriate. Why do we suggest this approach to exceptions? Well, an exception represents an immediate, nonlocal transfer of control—it’s a kind of cascading goto. Programs that use exceptions as part of their  normal processing suffer from all the readability and maintainability problems of classic spaghetti code. These programs break encapsulation: routines and their callers are more tightly coupled via exception handling.
 
 ## Implementations patterns
 
@@ -107,7 +104,7 @@ Headings are the following :
 
 ### Section "Use Exceptions Rather Than Return Codes"
 
-> Back in the distant past there were many languages that didn’t have exceptions. In those languages the techniques for handling and reporting errors were limited. You either set an error flag or returned an error code that the caller could check. The problem with these approaches is that they clutter the caller. The caller must check for errors immediately after the call. Unfortunately, it’s easy to forget. For this reason it is better to throw an exception when you encounter an error. The calling code is cleaner. Its logic is not obscured by error handling.
+> Back in the distant past there were many languages that didn't have exceptions. In those languages the techniques for handling and reporting errors were limited. You either set an error flag or returned an error code that the caller could check. The problem with these approaches is that they clutter the caller. The caller must check for errors immediately after the call. Unfortunately, it’s easy to forget. For this reason it is better to throw an exception when you encounter an error. The calling code is cleaner. Its logic is not obscured by error handling.
 
 ### Conclusion
 
@@ -117,8 +114,9 @@ Headings are the following :
 
 ### Chapter exceptions
 
-> There is often an implicit assumption in our programs that everything will go always go right, but even an optimist knows that sometimes thing can go wrong. (...) There is a possibility that the function we call might fail in an unexpected way.  (...) The most popular approach to this problem is exception handling with attempts to free us to program optimistically.
+#### Use return rather than exceptions
 
+> There is often an implicit assumption in our programs that everything will go always go right, but even an optimist knows that sometimes thing can go wrong. (...) There is a possibility that the function we call might fail in an unexpected way.  (...) The most popular approach to this problem is exception handling with attempts to free us to program optimistically. (...) We do not have to check for obscure error codes in every return value. Instead, we assume that everything works correctly. If something unexpected happens, the current activity will stop and our exception handler will determine what the program will do next. (...)
 ```javascript
 try {
     plan_a();
@@ -127,12 +125,26 @@ try {
 }
 ```
 
-> We do not have to check for obscure error codes in every return value. (...)
+#### Use exception for exceptional scenarios
+
 > The most popular misuse of exceptions is to use them to communicate normal results. For example, given a function that read a file, a `file not found error` should not be an exception. It is a normal occurrence. Exceptions should only be used for problems that should not be anticipated.
-> Reasoning about error recovery is difficult. So we should go with the pattern that is simple and reliable. Make all the expected outcome into return values. Save the exception for exceptions. (...)
->
-> When something goes seriously wrong, what can a program be expected to do about it ? (...)
-> It is not reasonable to expect, at our current level of technology, that the function can take corrective action. (...)
+> Reasoning about error recovery is difficult. So we should go with the pattern that is simple and reliable. Make all the expected outcome into return values. Save the exception for exceptions. The problem is that there are a lot of programs that were developed by people who were damaged by their experience with other languages. They use throw when they should return. They make complex catch clause that attempt to solve insolvable problems and maintain unmaintainable invariants.
+
+#### Do not use exception to communicate normal results
+
+> The Java language encourage misuses of exceptions as a way to get around problems in its type system. A Java method can only return a single type of return, so exceptions are used as an alternate channel to return the ordinary results that the type system does not allow. This can lead to several catch clauses attached to a single try bloc.  It can be confusing because the ordinary results get jumbled up with the real exceptions. It resembles a FORTRAN assigned GOTO statement, in which a variable contains the address of teh destination of the jump. (...) The control paths are dictated by the method that created the exception object. That creates a tight coupling between the thrower and the catcher that works again clean modular design.
+
+#### Exceptional scenario recovery should be local
+
+> When something goes seriously wrong, what can a program be expected to do about it ? (...) It is not reasonable to expect, at our current level of technology, that the function can take corrective action. (...)
 > The details in the exception object might be important ands useful for the programmer to know. That information is instead delivered to a function that can make no good use of it. We have corrupted the information flow. That information should be sent to the programmer, perhaps in the form of a journal entry. Instead, it is sent down the call stack, where it can be misunderstood and forgotten.
 
-[//]: # (TODO: Ajouter le passage sur l'appelant qui ne sait pas quoi faire parce qu'il n'a pas le contexte.)
+#### Specific exceptions issues in Javascript
+
+##### Security
+
+> There is an important model of security that limits the destructive power of functions by giving them only the references they need to do their work and nothing more. Exceptions, asu currently practiced, provide a channel thru which two untrusted functions can collude.
+
+##### Eventual
+
+> Exceptions work by unwinding the stack. Thrown values are communicated to function invocations that are lower on the stack. In eventual programming, the stack is emptied after each turn. Time travel is not available for transmitting a thrown exception value to an activation that no longer exists.
