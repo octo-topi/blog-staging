@@ -174,6 +174,17 @@ function handle(error) {
 
 [source](https://github.com/1024pix/pix/blob/dev/api/lib/application/error-manager.js#L349-L351)
 
+Il existe cependant des cas où les règles de gestion ne sont pas implémentées dans le use-case : les exceptions levées sont interceptées par l'appelant, comme dans le cas ci-dessous.
+
+```javascript
+  return dependencies.assessmentRepository.getByAssessmentIdAndUserId(assessmentId, userId).catch(() => {
+    const buildError = _handleWhenInvalidAuthorization('Vous n’êtes pas autorisé à accéder à cette évaluation');
+    return h.response(dependencies.validationErrorSerializer.serialize(buildError)).code(401).takeover();
+  });
+```
+
+[source](https://github.com/1024pix/pix/blob/1acf7dfc227d7ce45e5fc02487c84e88c0c587ed/api/lib/application/preHandlers/assessment-authorization.js#L14)
+
 #### Réflexion
 
 Cette solution était déjà en place lorsque je suis arrivé sur le projet, et cela me semblait relever de la magie. En effet, le framework effectue deux actions que l'on ne voit pas dans le use-case : intercepter l'exception, et inspecter toutes les réponses avant de les renvoyer à l'utilisateur. En contraste, voilà une solution explicite dans le use-case ci-dessous. Elle a le désavantage d'exposer dans le domaine des notions de la couche d'infrastructure (HTTP), une autre solution serait de le faire dans le controller.
@@ -196,19 +207,19 @@ Comme les raisons du choix de cette solution ne sont pas documentés, et que la 
 Si ces hypothèses sont correctes, cet exemple met avant le couplage évoqué par la littérature : le use-case se comporte de cette façon parce qu'un autre composant, à plusieurs couches de là, impose ce contrat de communication. Comme le dit "The pragmatic programmer" :
 > These programs break encapsulation: routines and their callers are more tightly coupled via exception handling.
 
-Dans les faits, cette solution est utilisée partout et par toutes les équipes chez Pix.
+Dans les faits, cette solution est utilisée presque partout et par toutes les équipes chez Pix.
 Elle est testée unitairement :
 
 - levée de l'exception par le use-case [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76) ;
 - mapping de l'exception en réponse HTTP [source](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/tests/unit/application/pre-response-utils_test.js#L33).
 
-Mon avis personnel est le suivant : l'utilisation de cette solution technique, passé les premiers jours, est simple. Cependant, la problématique la plus importante n'est pas adressée, car elle se situe en dehors du code : qui décide qu'un scénario métier est alternatif ou exceptionnel ? Comme aucune pratique n'adresse ce sujet, il est tentant de gérer les scénarios alternatifs en levant des exceptions, et donc de perdre toute distinction.
+Mon avis personnel est le suivant : l'utilisation de cette solution technique, passé les premiers jours, est simple. Cependant, la problématique la plus importante n'est pas adressée, car elle se situe en dehors du code : qui décide qu'un scénario métier est alternatif ou exceptionnel ? Comme aucune pratique organisationnelle ne traite le sujet, il est tentant de gérer les scénarios alternatifs en levant des exceptions, et donc de perdre toute distinction.
 
 #### Matérialisation
 
 Si personne ne sait pourquoi ce choix a été fait, il est toujours possible de noter nos hypothèses sous forme de rétro-ADR. Au fur et à mesure, on acquiert de plus en plus de connaissances ; et si l'on décide de changer de solution, on le fait en connaissance de cause.
 
-Lorsque je suis arrivé chez Pix, je pensais que cette solution gérait les cas alternatifs et j'avais écrit [cet ADR](https://github.com/GradedJestRisk/pix-tools/blob/e0478debe0d5454fe75844e4997fe279bac91d92/adr/handle-alternative-scenario.md). Avec le temps, mes hypothèses ont changées !
+Lorsque je suis arrivé chez Pix, je pensais que cette solution gérait les cas alternatifs et j'avais écrit [cet ADR](https://github.com/GradedJestRisk/pix-tools/blob/e0478debe0d5454fe75844e4997fe279bac91d92/adr/handle-alternative-scenario.md). Avec le temps, mes hypothèses ont changé.
 
 J'ai aussi pensé à ajouter une règle de lint qui autorise explicitement à lever les erreurs qui héritent de `Domain` dans les use-case, et l'interdire ailleurs. Ainsi, on incite à garder les règles de gestion dans les use-case. Le développeur qui lève une erreur de type `Domain` dans un repository pourra choisir de retourner à la place une valeur de retour, ou à ajouter une exception.
 
