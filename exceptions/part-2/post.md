@@ -63,16 +63,19 @@ C'est un peu comme le principe : "Si tout est important, rien n'est important". 
 Assez parlé, voyons des cas pratiques. Ils sont tirés de l'API REST en NodeJs de l'application Pix. Elle est accessible au grand public, aussi bien l'[application](https://app.pix.fr) en elle-même que [son code source](https://github.com/1024pix/pix). En ligne depuis 8 ans, utilisée par des millions d'utilisateurs et développée par 50 développeurs répartis dans plusieurs équipes, c'est un cas représentatif.
 
 Les cas pratiques couvrent deux implémentations possibles :
+
 - lever une exception ;
 - renvoyer une valeur de retour.
 
-Ils ont été implémentés à des moments différents de ma participation au projet : 
+Ils ont été implémentés à des moments différents de ma participation au projet :
+
 - bien avant que je rejoigne le projet ;
 - pendant que j'y participais.
 
 Nous essaierons de savoir à quelle règle théorique se rattachent ces cas.
 
 Nous verrons aussi comment nous pourrions matérialiser les raisons de ce choix :
+
 - écrire des [ADR](https://github.com/1024pix/pix/blob/656e609745d36ead5b33695da6c5272c04bb9272/docs/adr/0001-enregistrer-les-decisions-concernant-l-architecture.md);
 - les incorporer à un standard de code, implémenté sous forme de linter.
 
@@ -94,7 +97,8 @@ Prenons l'exemple de l'ajout d'un administrateur depuis une IHM d'administration
 
 Comment l'API peut-elle répondre un code 422 lorsque le use-case lève une exception ?$
 
-Il n'y a pas moins de 7 étapes, aussi je les détaille avant de citer le code : 
+Il n'y a pas moins de 7 étapes, aussi je les détaille avant de citer le code :
+
 - A - au démarrage du serveur, un hook de pre-response est enregistré ;
 - B - la requête est reçue par le controller et transmise au use-case ;
 - C - le use-case lève une exception ;
@@ -104,20 +108,25 @@ Il n'y a pas moins de 7 étapes, aussi je les détaille avant de citer le code :
 - E - il appelle une fonction de mapping, qui en fonction de l'exception renvoie une réponse personnalisée (ici une 422).
 
 A - Enregistrement du hook
+
 ```javascript
 server.ext('onPreResponse', preResponseUtils.handleDomainAndHttpErrors);
 ```
+
 [source](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/config/server-setup-error-handling.js#L30)
 
 B - Controller
+
 ````javascript
   const attributes = await adminMemberSerializer.deserialize(request.payload);
   const savedAdminMember = await usecases.saveAdminMember(attributes);
   return h.response(dependencies.adminMemberSerializer.serialize(savedAdminMember)).created();
 ````
+
 [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/application/admin-members/admin-member-controller.js#L30)
 
 C - Use-case
+
 ```javascript
 const saveAdminMember = async function () {
     if(memberExists) {
@@ -125,9 +134,11 @@ const saveAdminMember = async function () {
     }
 }
 ```
+
 [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/domain/usecases/save-admin-member.js#L22)
 
-Erreur 
+Erreur
+
 ```javascript
 class AlreadyExistingAdminMemberError extends DomainError {
   constructor(message = 'Cet agent a déjà accès') {
@@ -135,10 +146,11 @@ class AlreadyExistingAdminMemberError extends DomainError {
   }
 }
 ```
+
 [source](https://github.com/1024pix/pix/blob/4e035ce1c9b58db20a5efd00c634f4ed2339afbd/api/lib/domain/errors.js#L18-L18)
 
-
 D - Interception de la réponse dans le hook
+
 ```javascript
 function handleDomainAndHttpErrors( request, errorManager) {
   const response = request.response;
@@ -147,6 +159,7 @@ function handleDomainAndHttpErrors( request, errorManager) {
   }
 }
 ```
+
 [source](https://github.com/1024pix/pix/blob/3ba616d8f47e16202533fc6da2536d9b27f1d57a/api/lib/application/pre-response-utils.js#L14)
 
 E - Mapping de l'exception vers une réponse 422
@@ -158,6 +171,7 @@ function handle(error) {
     }
 }
 ```
+
 [source](https://github.com/1024pix/pix/blob/dev/api/lib/application/error-manager.js#L349-L351)
 
 #### Réflexion
@@ -173,6 +187,7 @@ const saveAdminMember = async function () {
 ```
 
 Comme les raisons du choix de cette solution ne sont pas documentés, et que la connaissance ne s'est pas transmise oralement, j'avance des hypothèses :
+
 - le fait que l'utilisateur soit déjà administrateur est un scénario exceptionnel ;
 - une exception est levée pour extraire du use-case et du controller la gestion de ce scénario exceptionnel ;
 - le use-case retourne toujours des données nominales ;
@@ -181,9 +196,9 @@ Comme les raisons du choix de cette solution ne sont pas documentés, et que la 
 Si ces hypothèses sont correctes, cet exemple met avant le couplage évoqué par la littérature : le use-case se comporte de cette façon parce qu'un autre composant, à plusieurs couches de là, impose ce contrat de communication. Comme le dit "The pragmatic programmer" :
 > These programs break encapsulation: routines and their callers are more tightly coupled via exception handling.
 
-
 Dans les faits, cette solution est utilisée partout et par toutes les équipes chez Pix.
 Elle est testée unitairement :
+
 - levée de l'exception par le use-case [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/tests/unit/domain/usecases/save-admin-member_test.js#L76-L76) ;
 - mapping de l'exception en réponse HTTP [source](https://github.com/1024pix/pix/blob/b6835d9c6ed8e7738a270d84786e86f9159c2319/api/tests/unit/application/pre-response-utils_test.js#L33).
 
@@ -199,13 +214,24 @@ J'ai aussi pensé à ajouter une règle de lint qui autorise explicitement à le
 
 ### Cas 2 : Retourner une valeur si un appel HTTP échoue
 
-Lorsqu'une API externe est appelée, par exemple celle de Pole Emploi pour le SSO, on s'attend à ce qu'elle ne soit pas toujours disponible, ou qu'elle nous renvoie de temps en temps des erreurs (code 4**). Encore une fois, si nous suivons les préconisations de Martin Fowler, la fonction devrait devrait renvoyer une valeur de retour plutôt que de lever une exception.
+Lorsqu'une API externe est appelée, par exemple celle de Pôle Emploi pour le SSO, on s'attend à ce qu'elle ne soit pas toujours disponible, ou qu'elle nous renvoie de temps en temps des erreurs (code 4**). Si nous suivons les préconisations de Martin Fowler, la fonction devrait renvoyer une valeur de retour plutôt que de lever une exception. C'est ce qui est fait.
 
-Cette fois-ci, on constate que c'est ce que l'on a fait. Si un appel API ne s'achève pas avec succès, on renvoie un objet. Celui-ci contient tous les détails de la réponse de l'APi externe. Notez en passant que, pour faire cela, on doit intercepter les exceptions de la librairie HTTP, axios.
+#### Implémentation
+
+Voilà la séquence des évènements :
+
+- A : on appelle l'API externe avec de la librairie HTTP axios ;
+- si l'appel ne s'achève pas avec succès, une exception est levée par la librairie ;
+- on catche cette erreur de suite et on récupère le code retour HTTP et les détails de l'erreur ;
+- avec ceux-ci, on alimente une valeur de retour dans un objet de type `HttpResponse` ;
+- on renvoie cette valeur de retour ;
+- B : l'appelant inspecte la valeur de retour et prend les décisions associées.
+
+A - Appel API externe
 
 ```javascript
 try{
-    const httpResponse = await axios.get(url, config);
+    const httpResponse = await axios.post(url, config);
 } catch (httpErr) {
     if (httpErr.response) {
         code = httpErr.response.status;
@@ -226,7 +252,27 @@ try{
 
 [source](https://github.com/1024pix/pix/blob/2a8a3cc7b38621fdb35ff81f7f6e6675e8d31cd0/api/lib/infrastructure/http/http-agent.js#L59)
 
-Etant donné qu'il y a peu d'appels à des API externes, les développeurs ne pouvaient pas savoir que cette décision avait été prise, et auraient implémenté les appels de manière différente.
+B - L'appelant interprète le retour
+
+```javascript
+  const { code, isSuccessful } = await httpAgent.post({ url, payload: event, headers });
+
+  if (!isSuccessful) {
+    throw new AuditLoggerApiError(`Pix Audit Logger Api answered with status ${code}`);
+  }
+```
+
+[source](https://github.com/1024pix/pix/blob/6a8aaef6c171cfdef5bdd764ce51cc2aa24da6cd/api/lib/infrastructure/repositories/audit-logger-repository.js#L14)
+
+#### Réflexion
+
+Cette solution a été mise en place lorsque je faisais partie de l'équipe. L'utilisation de ce module m'avait semblé inhabituelle au début, mais lorsque je me suis rendu compte du nombre de cas à gérer lors de l'appel à axios, j'ai trouvé que la valeur de retour du module, un objet Response, simplifiait la compréhension.
+
+Si l'on revient sur la différence entre scénario alternatif et exceptionnel, on pourrait se demander si un appel HTTP échoue souvent ou exceptionnellement. Dans notre contexte, on appelle des API externe sans SLA : partons du principe qu'elles peuvent échouer.
+
+#### Matérialisation
+
+Comme il y a peu d'appels à des API externes, les développeurs ne pouvaient pas savoir que cette décision avait été prise, et auraient implémenté les appels de manière différente.
 
 Pour que cette solution soit utilisée sans effort, on a encapsulé la librairie dans un module, puis :
 
@@ -239,6 +285,6 @@ Nous avons vu que le quotidien du développeur est rempli de micro-décisions de
 
 Pour prendre les meilleures décisions, un dialogue doit tout d'abord avoir lieu au sein de l'équipe. Une fois la solution décidée, elle doit être vérifiée par des tests automatiques, par exemple des linter.
 
-Finalement, pour que cette connaissance ne soit pas perdue, et que la solution puisse être reconsidérée, une documentation doit être produite. Pix a choisi, pour éviter le phénomène bien connu de [documentation inadaptée](https://blog.octo.com/le-jour-ou-la-documentation-a-disparu), de le documenter sous forme [d'ADR](https://blog.octo.com/architecture-decision-record).
+Finalement, pour que cette connaissance ne soit pas perdue, et que la solution puisse être reconsidérée, une documentation doit être produite. Pix a choisi, pour éviter le phénomène bien connu de [documentation inadaptée](https://blog.octo.com/le-jour-ou-la-documentation-a-disparu), de le documenter sous forme [d'ADR](https://blog.octo.com/architecture-decision-record). Même si la connaissance a été perdue, il n'est jamais trop tard : écrivez des rétro-ADR pour matérialiser vos connaissances existantes.
 
 Certains d'entre-vous auront reconnu le principe de partage en continu des connaissances, ou "Documentation vivante", de [Cyrille Martraire](https://github.com/cyriux). Et maintenant, GOTO practice !

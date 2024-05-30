@@ -47,6 +47,7 @@ You'll find below excerpts from the following texts:
 > We suggested that it is good practice to check for every possible error—particularly the unexpected ones. However, in practice this can lead to some pretty ugly code; the normal logic of your program can end up being totally obscured by error handling.
 
 #### What Is Exceptional ?
+>
 > One of the problems with exceptions is knowing when to use them. We believe that exceptions should rarely be used as part of a program’s normal flow; exceptions should be reserved for unexpected events. For example, if your code tries to open a file for reading and that file does not exist, should an exception be raised? Our answer is, “It depends.” If the file should have been there, then an exception is warranted. Something unexpected happened - a file you were expecting to exist seems to have disappeared. On the other hand, if you have no idea whether the file should exist or not, then it doesn't seem exceptional if you can’t find it, and an error return is appropriate. Why do we suggest this approach to exceptions? Well, an exception represents an immediate, nonlocal transfer of control—it’s a kind of cascading goto. Programs that use exceptions as part of their  normal processing suffer from all the readability and maintainability problems of classic spaghetti code. These programs break encapsulation: routines and their callers are more tightly coupled via exception handling.
 
 ## Implementations patterns
@@ -117,6 +118,7 @@ Headings are the following :
 #### Use return rather than exceptions
 
 > There is often an implicit assumption in our programs that everything will go always go right, but even an optimist knows that sometimes thing can go wrong. (...) There is a possibility that the function we call might fail in an unexpected way.  (...) The most popular approach to this problem is exception handling with attempts to free us to program optimistically. (...) We do not have to check for obscure error codes in every return value. Instead, we assume that everything works correctly. If something unexpected happens, the current activity will stop and our exception handler will determine what the program will do next. (...)
+
 ```javascript
 try {
     plan_a();
