@@ -117,11 +117,11 @@ server.ext('onPreResponse', preResponseUtils.handleDomainAndHttpErrors);
 
 B - Controller
 
-````javascript
+```javascript
   const attributes = await adminMemberSerializer.deserialize(request.payload);
   const savedAdminMember = await usecases.saveAdminMember(attributes);
   return h.response(dependencies.adminMemberSerializer.serialize(savedAdminMember)).created();
-````
+```
 
 [source](https://github.com/1024pix/pix/blob/850441bd9378e3df035cfc2133f33da9d267b8bc/api/lib/application/admin-members/admin-member-controller.js#L30)
 
