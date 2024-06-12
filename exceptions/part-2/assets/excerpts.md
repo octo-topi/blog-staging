@@ -5,7 +5,7 @@ You'll find below excerpts from the following texts:
 * 1993 : McConnell, Code complete;
 * 1999 : Hunt and Thomas, The pragmatic programmer;
 * 2007 : Kent Beck, Implementations patterns;
-* 2008 : Robert Matin, Clean code;
+* 2008 : Robert Martin, Clean code;
 * 2018 : Douglas Crockford, How Javascript works.
 
 ## Code complete

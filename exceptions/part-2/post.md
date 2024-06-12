@@ -44,7 +44,7 @@ La gestion des erreurs est donc une exigence fonctionnelle. McConnell liste sur 
 
 Plus récemment (2018), dans "How Javascript works", Crockford est [très critique](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#how-javascript-works) envers l'usage actuel des exceptions. Dans le même style radical que dans "The Good Parts", il explique que les exceptions ont été détournées de leur but initial, la gestion des erreurs, pour être utilisées comme n'importe quelle structure de contrôle. Il prescrit d'utiliser des codes de retour dans la plupart des cas, et de garder les exceptions pour les seuls cas "désespérés".
 
-\> Raisonner sur la récupération en cas d'erreur est difficile. Nous devrions utiliser une solution simple et fiable. Renvoyez dans les valeurs de retours ce à quoi vous vous attendez. Gardez les exceptions pour les exceptions.
+\> Raisonner sur la récupération en cas d'erreur est difficile. Nous devrions utiliser une solution simple et fiable. Renvoyez dans les valeurs de retours ce à quoi vous vous attendez. Gardez les exceptions pour les cas exceptionnels.
 
 ### Erreur, vous avez dit erreur ?
 
@@ -95,7 +95,7 @@ Sur Pix, le corps principal du traitement (en général, le use-case) effectue c
 
 Prenons l'exemple de l'ajout d'un administrateur depuis une IHM d'administration, via un `POST` de la route `/api/admin/admin-members`. Si plusieurs utilisateurs ajoutent un administrateur depuis l'IHM sur un temps court, on recevra des demandes identiques : la première sera honorée et on renvoie une 201 (Created), les autres seront rejetés avec une 422 (UnprocessableEntityError). J'utilise l'expression "temps court" pour simplifier : tant que le front-end (SPA Ember) n'est pas notifié de la modification de la donnée dans l'API, il permet l'ajout d'un administrateur ; et en l'absence de Websockets, cela ne se produit que lorsque l'utilisateur rafraîchit la page.
 
-Comment l'API peut-elle répondre un code 422 lorsque le use-case lève une exception ?$
+Comment l'API peut-elle répondre un code 422 lorsque le use-case lève une exception ?
 
 Il n'y a pas moins de 7 étapes, aussi je les détaille avant de citer le code :
 
