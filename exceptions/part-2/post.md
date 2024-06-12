@@ -2,7 +2,7 @@
 
 ## Faire ou ne pas faire exception ?
 
-Dans [l'article précédent](https://blog.octo.com/considered-harmful), nous avons vu que les débats sur le style d'implémentation ne datent pas d'hier. Selon [Steve McConnell](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#code-complete), le débat sur le GOTO est toujours d'actualité.
+Dans [l'article précédent](https://blog.octo.com/considered-harmful), nous avons vu que les débats sur le style d'implémentation ne datent pas d'hier. Selon [Steve McConnell](https://github.com/octo-topi/blog-staging/blob/main/exceptions/part-2/assets/excerpts.md#code-complete), le débat sur le GOTO est toujours d'actualité.
 
 \> Vous pensez probablement que le débat sur le GOTO appartient au passé (...) mais le GOTO est toujours en bonne santé, il vit au plus profond des serveurs de votre entreprise. Les débats autour du GOTO fleurissent toujours avec des costumes différents, par exemple les multiples retours dans la même fonction, la présence de plusieurs sorties d'une boucle et la gestion des erreurs.
 
@@ -23,7 +23,7 @@ En 1993, dans le chapitre "Defensive programing" de "Code complete", McConnell a
 
 Lorsqu'une exception survient, le contrôle n'est pas transféré n'importe où dans le fichier. Il est transféré plus haut dans la pile d'appel, voir au processus appelant. Là où la portée du `GOTO` se limitait au fichier, la portée de l'exception est le processus de l'OS.
 
-S'il ne fallait en retenir qu'une phrase [du chapitre](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#code-complete), ce serait celle-ci :
+S'il ne fallait en retenir qu'une phrase [du chapitre](https://github.com/octo-topi/blog-staging/blob/main/exceptions/part-2/assets/excerpts.md#code-complete), ce serait celle-ci :
 
 \> Utilisées judicieusement, elles peuvent réduire la complexité. Utilisées imprudemment, elles peuvent rendre le code quasi-impossible à suivre.
 
@@ -32,17 +32,17 @@ McConnell attire l'attention sur le fait que, face à une erreur, on peut :
 - favoriser l'intégrité et arrêter totalement l'application (ex : sur un dispositif d'irradiation médical, l'interception d'une exception cause l'arrêt de l'appareil) ;
 - favoriser la robustesse et continuer comme si de rien n'était (ex : dans l'affichage d'un traitement de texte, l'interception d'une exception mineure ne provoque pas d'arrêt, elle est ignorée).
 
-La gestion des erreurs est donc une exigence fonctionnelle. McConnell liste sur une dizaine de pages [des critères précis](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#code-complete) pour utiliser judicieusement les exceptions.
+La gestion des erreurs est donc une exigence fonctionnelle. McConnell liste sur une dizaine de pages [des critères précis](https://github.com/octo-topi/blog-staging/blob/main/exceptions/part-2/assets/excerpts.md#code-complete) pour utiliser judicieusement les exceptions.
 
 ### Utiliser souvent des exceptions
 
-2008 voit la publication par Robert Martin du livre le plus connu aujourd'hui sur la lisibilité du code : "Clean code". Dans [le chapitre consacré à la gestion d'erreur](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#clean-code), Michael Feathers conseille l'utilisation des exceptions au lieu des codes de retour. Son intention est de mettre en avant le comportement nominal, et de mettre de côté le comportement exceptionnel (erreur).
+2008 voit la publication par Robert Martin du livre le plus connu aujourd'hui sur la lisibilité du code : "Clean code". Dans [le chapitre consacré à la gestion d'erreur](https://github.com/octo-topi/blog-staging/blob/main/exceptions/part-2/assets/excerpts.md#clean-code), Michael Feathers conseille l'utilisation des exceptions au lieu des codes de retour. Son intention est de mettre en avant le comportement nominal, et de mettre de côté le comportement exceptionnel (erreur).
 
 \> La gestion des erreurs est importante, mais si elle obscurcit la logique (métier), c'est une mauvaise chose. (..) Nous pouvons écrire du code propre et robuste si nous envisageons la gestion d'erreur comme une préoccupation séparée, quelque chose d'indépendant de la logique principale.
 
 ### Utiliser rarement des exceptions
 
-Plus récemment (2018), dans "How Javascript works", Crockford est [très critique](https://github.com/octo-topi/blog-staging/blob/add-exceptions-part-two/exceptions/part-2/assets/excerpts.md#how-javascript-works) envers l'usage actuel des exceptions. Dans le même style radical que dans "The Good Parts", il explique que les exceptions ont été détournées de leur but initial, la gestion des erreurs, pour être utilisées comme n'importe quelle structure de contrôle. Il prescrit d'utiliser des codes de retour dans la plupart des cas, et de garder les exceptions pour les seuls cas "désespérés".
+Plus récemment (2018), dans "How Javascript works", Crockford est [très critique](https://github.com/octo-topi/blog-staging/blob/main/exceptions/part-2/assets/excerpts.md#how-javascript-works) envers l'usage actuel des exceptions. Dans le même style radical que dans "The Good Parts", il explique que les exceptions ont été détournées de leur but initial, la gestion des erreurs, pour être utilisées comme n'importe quelle structure de contrôle. Il prescrit d'utiliser des codes de retour dans la plupart des cas, et de garder les exceptions pour les seuls cas "désespérés".
 
 \> Raisonner sur la récupération en cas d'erreur est difficile. Nous devrions utiliser une solution simple et fiable. Renvoyez dans les valeurs de retours ce à quoi vous vous attendez. Gardez les exceptions pour les cas exceptionnels.
 
