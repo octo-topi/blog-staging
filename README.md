@@ -9,6 +9,7 @@ OCTO blog use Google Docs and custom scripts.
 #### Unsupported
 
 The following items are ignored:
+
 - alignment
 - justification
 - color, size, font
@@ -18,6 +19,7 @@ The following items are ignored:
 ##### Natively in markdown
 
 The following elements from markdown are handled:
+
 - bold
 - italic
 - strikethrough
@@ -73,12 +75,12 @@ And adjust rules in [configuration](./.mardownlint.jsonc)
 
 In order to test links before PR is merged, links targets the pull request itself.
 
-Before publishing : 
+Before publishing :
+
 - merge pull request
 - replace link to PR by link to `main` branch
 - run link again to check
 - push-force
-
 
 ## Publish
 
@@ -91,6 +93,7 @@ npm run generate-html
 Paste in Google Docs.
 
 Then do manual stuff:
+
 - add 2 line returns after quotes
 - copy/paste code blocks with Ctrl/Shift/V
 
