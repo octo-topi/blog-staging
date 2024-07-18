@@ -4,7 +4,7 @@ Cet article est dédié à [Jérémy Buget](https://jbuget.fr/) qui, en créant 
 
 ## tl:dr
 
-Dans une application de gestion, lorsque la base de données relationnelle présente des signes inquiétants (deadlock, I/O en qui monte en flèche), les développeurs ne savent pas toujours comment réagir. Lorsque la base de donnée est administrée en interne par un DBA, c'est vers lui qu'on se tourne. Mais que faire quand on utilise un PaaS ? Le but de cet article est de montrer qu'un développeur peut, avec quelques notions sur le fonctionnement interne des bases de données (ici PostgreSQL) faire un premier diagnostic - et la plupart du temps résoudre le problème.
+Dans une application de gestion, lorsque la base de données relationnelle présente des signes inquiétants (deadlock, I/O en qui monte en flèche), les développeurs ne savent pas toujours comment réagir. Lorsque la base de donnée est administrée en interne par un DBA, c'est vers lui qu'on se tourne. Mais que faire quand on utilise un PaaS ? Le but de cet article est de montrer qu'un développeur peut, avec quelques notions sur le fonctionnement interne des bases de données (ici PostgreSQL) faire un premier diagnostic - et la plupart du temps résoudre le problème. Nous partageons aussi de l'outillage pour le monitoring, sur le serveur web HapiJs et le serveur de BDD dans le PaaS Scalingo.
 
 ## Il était une fois
 
@@ -14,27 +14,27 @@ Cette histoire est de fait une enquête. Les ressorts classiques du polar s'appl
 
 ## Exposition
 
-Septembre est aux plateformes éducatives, comme Pix, ce qu'est décembre est aux grands magasins : un mois un peu fébrile où, bien que tout le monde soit habitué aux pics d'activité saisonniers, un imprévu peut vite prendre des proportions significatives. 
+Septembre est aux plateformes éducatives, comme Pix, ce qu'est décembre est aux grands magasins : un mois un peu fébrile où, bien que tout le monde soit habitué aux pics d'activité saisonniers, un imprévu peut vite prendre des proportions significatives.
 
 En théorie, tout devrait bien se passer :
 
 - côté front, les applications sont des SPA, donc l'IHM est à charge des navigateurs client - les serveurs front sont de simples nginx servant du js;
 - côté back, l'API REST est stateless et scalable horizontalement - notre PaaS [Scalingo](https://scalingo.com/) met à disposition un auto-scaler ;
-- côté BDD, la seule brique stateful, on utilise un plan PostgreSQL largement taillé. 
+- côté BDD, la seule brique stateful, on utilise un plan PostgreSQL largement taillé.
 
-Aussi, lorsque la base de données refuse les connexions en une fin d'après-midi de septembre 2023, le mardi 19 à 17h45, les [capitaines](https://engineering.pix.fr/organisation/2020/04/14/les-capitaines-de-la-production.html) dont je fais partie sont intrigués. C'était le premier symptôme d'un problème qui allait durer 3 jours : la base de données allait être régulièrement ralentie au point d'être indisponible. 
+Aussi, lorsque la base de données refuse les connexions en une fin d'après-midi de septembre 2023, le mardi 19 à 17h45, les [capitaines](https://engineering.pix.fr/organisation/2020/04/14/les-capitaines-de-la-production.html) dont je fais partie sont intrigués. C'était le premier symptôme d'un problème qui allait durer 3 jours : la base de données allait être régulièrement ralentie au point d'être indisponible.
 
 Au-delà de ces 3 jours de dégradation de service, ce furent trois jours de travail collectif, OPS et équipes, trois jours d'apprentissage qui nous ont fait progresser dans la mise en place de solutions de mitigations, et de capacité à trouver et résoudre des problèmes en production.
 
-## J-1: Le signe avant-coureur
+## mardi soir 19: le signe avant-coureur
 
 Si les connexions sont refusées, c'est parce que le nombre de connexions ouvertes a [atteint le quota](https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-MAX-CONNECTIONS). Comme le nombre de connexions ouvertes est généralement très en dessous du quota, nous pensons tout de suite à une ressource (par exemple une table) qui n'a pas été libérée, et que la plupart des connexions attendent.
 
 Un suspect est rapidement identifié: une mise en production, comportant [une suppression de colonne](https://github.com/1024pix/pix/pull/6983), qui s'est achevée à 17h53.
 
-La mise en production chez Pix est conçue pour minimiser les interruptions de service : les modifications de schéma de base de données sont exécutées [sans arrêter les applications](https://doc.scalingo.com/platform/app/postdeploy-hook#workflow). Dans certains cas, si moins deux tables sont modifiées et qu'un même appel API utilise ces deux tables, [un deadlock](https://stackoverflow.com/questions/22775150/how-to-simulate-deadlock-in-postgresql/22776994#22776994) peut survenir. Cela ne s'est produit qu'une fois, et la solution de contournement a été documentée : arrêter l'API avant d'exécuter la mise en production. 
+La mise en production chez Pix est conçue pour minimiser les interruptions de service : les modifications de schéma de base de données sont exécutées [sans arrêter les applications](https://doc.scalingo.com/platform/app/postdeploy-hook#workflow). Dans certains cas, si moins deux tables sont modifiées et qu'un même appel API utilise ces deux tables, [un deadlock](https://stackoverflow.com/questions/22775150/how-to-simulate-deadlock-in-postgresql/22776994#22776994) peut survenir. Cela ne s'est produit qu'une fois, et la solution de contournement a été documentée : arrêter l'API avant d'exécuter la mise en production.
 
-Cette fois-ci, la mise en production est bien finie...mais l'on constate que la requête de suppression de colonne est toujours en attente ! Nous mettons cet incohérence de côté et essayons de faire passer cette requête. Elle attend la libération de la table pour [poser un verrou d'accès exclusif](https://pglocks.org/?pgcommand=ALTER%20TABLE%20DROP%20COLUMN). Il existe une file d'attente sur les locks, aussi cette requête devrait obtenir cet accès exclusif lorsque les requêtes précédentes s'achèvent. Mais force est de constater qu'au bout de 20 minutes, elle ne l'obtiendra pas de sitôt. 
+Cette fois-ci, la mise en production est bien finie...mais l'on constate que la requête de suppression de colonne est toujours en attente ! Nous mettons cet incohérence de côté et essayons de faire passer cette requête. Elle attend la libération de la table pour [poser un verrou d'accès exclusif](https://pglocks.org/?pgcommand=ALTER%20TABLE%20DROP%20COLUMN). Il existe une file d'attente sur les locks, aussi cette requête devrait obtenir cet accès exclusif lorsque les requêtes précédentes s'achèvent. Mais force est de constater qu'au bout de 20 minutes, elle ne l'obtiendra pas de sitôt.
 
 Nous décidons d'arrêter tous les conteneurs API pour mettre fin aux requêtes en cours, sans aucun effet. Les requêtes SQL sont toujours actives sur la base de données, alors que les connexions réseau avec les clients ont été perdues ! C'est un comportement [documenté](https://postgrespro.com/list/thread-id/1487997) de PostgreSQL, mais que nous ne connaissions pas. Nous décidons alors de forcer l'arrêt (`pg_terminate`) de toutes les requêtes SQL, dont celle de migration, puis de relancer la mise en production. Ouf, tout se passe bien.
 
@@ -42,7 +42,7 @@ Je profite de cette bonne nouvelle pour vous expliquer pourquoi nous sommes à c
 
 Bien. Mais que s'est-il passé ? Pourquoi la requête de suppression de colonnes n'a-t-elle pas pu obtenir un accès exclusif ?
 
-## J: Batch, (a necessary) evil
+## mercredi 20: Batch, (a necessary) evil
 
 Le lendemain, nous cherchons une activité anormale sur la base de données et remarquons deux choses : des imports de fichier XML en échec entre 17h30 et 17h45, et un pic d'activité sur le FS à partir de 17h15. Nous tenons le coupable ! C'est une histoire complexe, mais j'ai le temps de vous l'expliquer.
 
@@ -56,19 +56,80 @@ Curieusement, cet import de fichier XML nous était déjà bien connu...pour ses
 
 Lors de la mise en place du endpoint d'import, tout se passait bien. Mais après quelque temps, nous avons relevé des erreurs 504, [à l'initiative du routeur](https://doc.scalingo.com/platform/internals/routing#timeouts): le serveur doit commencer à répondre au client en moins de 30 secondes, et lors de fichiers volumineux, le traitement n'avait pas le temps de répondre. Cela a empiré avec des crash OOM de conteneurs applicatifs : nous avons alors décidé [de streamer](https://github.com/1024pix/pix/pull/2061) le traitement. La situation était revenue à la normale. Nous avions envisagé d'isoler le traitement de ces fichiers dans une API dédiée, avec [un mécanisme de queuing](https://github.com/timgit/pg-boss). Cela aurait permis de ne perdre aucun fichier (relance en cas de crash), de fixer le nombre de fichiers à traiter en même temps, d'allouer des ressources adaptées (ex: RAM). Et surtout, en cas de crash, cela n'impacterait pas le service de l'API principale. La contrepartie aurait été des modifications profondes de l'IHM : l'utilisateur aurait besoin de suivre l'avancement de l'import de son fichier. Nous avons décidé d'utiliser ce mécanisme de queuing si le besoin se confirmait, et l'avons d'ailleurs utilisé plus tard [pour des extractions de données](https://github.com/1024pix/pix/blob/2b6b6a12ab70f74e320a239468e441790e7df8ee/docs/adr/0032-utiliser-pgboss-pour-les-taches-asynchrone.md).
 
-Bref, cet import XML était un coupable tout désigné : il générait des requêtes longues. Mais en regardant de plus près sur la période 17h15-17h45, avant la mise en production, nous avons constaté que les requêtes SQL déclenchées par l'import étaient toujours en cours, alors que les appels API avaient échoué en 504. Ces requêtes "fantômes" restaient actives, alors que la réponse ne pourrait plus être fournie à l'utilisateur. Nous avons vu auparavant que si les conteneurs web étaient arrêtés, les requêtes SQL n'étaient pas interrompues. Or ici, le serveur web HapiJs était toujours actif. En regardant les traces sur ce serveur, on voit qu'une fois la requête API traitée, donc après que les requêtes SQl aient abouti et le fichier importé avec succès, le serveur tente de répondre au client via le routeur. Or le socket réseau est fermé : [il répond alors une 499](**https://doc.scalingo.com/platform/internals/router-error-codes).
+Bref, cet import XML était un coupable tout désigné : il générait des requêtes longues. Mais en regardant de plus près sur la période 17h15-17h45, avant la mise en production, nous avons constaté que les requêtes SQL déclenchées par l'import étaient toujours en cours, alors que les appels API avaient échoué en 504. Ces requêtes "fantômes" restaient actives, alors que la réponse ne pourrait plus être fournie à l'utilisateur. Nous avons vu auparavant que si les conteneurs web étaient arrêtés, les requêtes SQL n'étaient pas interrompues. Or ici, le serveur web HapiJs était toujours actif. En regardant les traces sur ce serveur, on voit qu'une fois la requête API traitée, donc après que les requêtes SQl aient abouti et le fichier importé avec succès, le serveur tente de répondre au client via le routeur. Or le socket réseau est fermé : [il répond alors une 499](https://doc.scalingo.com/platform/internals/router-error-codes).
 
 Tout heureux de notre trouvaille brillante, nous observons aussi que plusieurs appels API d'import XML sur le même établissement ont lieu en quelques minutes. Cela veut dire que le même utilisateur soumet le même fichier plusieurs fois. Élémentaire ! Comme le premier import échoue au bout d'une minute sans message d'erreur explicite, il soumet à nouveau le fichier, jusqu'à dix fois, ce qui déclenche autant d'import des mêmes données, qui sont correctement importées. Mais cela, l'utilisateur ne le sait pas. Nous parons au plus pressé : l'équipe en charge de cette fonctionnalité [rajoute un message d'information](https://github.com/1024pix/pix/pull/7111) explicite à l'attention de l'utilisateur : il lui demande d'attendre quelques minutes. Nous créons aussi un dashboard qui liste les imports multiples sur le même établissement, pour que nous puissions interrompre les requêtes SQL. Pour la suite, nous attendons de voir si le nombre de fichiers importés continue à augmenter, auquel cas nous mettrons en place un mécanisme de queuing.
 
-## J+1 : VACUUM
+## jeudi 21 : VACUUM, a (necessary) evil
 
+Ce matin-là, nous profitons du calme relatif pour revenir à la santé de la plateforme. Nous remarquons que les VACUUMS sont plus nombreux qu'à l'habitude. Nous suivons ceux-ci, car il est arrivé qu'ils impactent significativement les performances de la base de données. Comme le service de BDD fourni par Scalingo ne permet pas de suivre [leur avancement](https://www.postgresql.org/docs/current/progress-reporting.html#VACUUM-PROGRESS-REPORTING) en temps réel (la table `pg_stat_progress_vacuum` n'est pas accessible), nous nous débrouillons autrement. Pour confirmer qu'un VACUUM est en cours, nous vérifions les requêtes en cours via la table `pg_stat_activity` (en SQL ou [via l'IHM Scalingo](https://doc.scalingo.com/databases/postgresql/monitoring#watching-running-queries)). Si celui-ci est fini, nous pouvons consulter l'historique d'exécution (début et fin) dans [les logs de la BDD](https://doc.scalingo.com/platform/app/log-drain) après avoir activé [l'option `log_autovacuum_min_duration`](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-AUTOVACUUM-MIN-DURATION), ainsi que la date de dernière exécution par table dans `pg_stat_user_tables.last_autovacuum`.
 
+Nous remarquons que ce ne sont pas les tables habituelles qui font l'objet d'un VACUUM, mais la table `organization-learners`. Cette table est celle qui est alimentée par l'import de fichier XML. A première vue, si la table est modifiée plus fréquemment sur cette période, alors les VACUUM doivent être plus fréquents. C'est une situation normale.
+
+Il y a beaucoup d'idées approximatives sur l'implémentation de l'intégrité transactionelle dans PostgreSQL, et le VACUUM est vu comme une opération qui récupère l'espace libre. Si de l'espace est libéré, par quoi a-t-il été libéré ? Des données supprimées par un DELETE SQL ? J'invite les développeurs à lire, dans l'ouvrage ["PostgreSQl internals"](https://postgrespro.com/community/books/internals), la section dédiée, illustrée par de nombreux exemples : Part 1: Isolation and MVCC / 2.3 Isolation Levels in PostgreSQL. Pour ceux qui n'en ont pas la possibilité, retenez simplement pour cet article que chaque requête de modification (INSERT/UPDATE/DELETE) entraîne la création de nouveaux enregistrements dans la table concernée - même si la transaction a été annulée (ROLLBACK) ! Au bout d'un certain temps, certaines de ces informations ne sont plus nécessaires ("dead tuple") et leur emplacement peut être réutilisé.
+
+Nous surveillons également les requêtes SQL longues. Pour disposer de cette information depuis le dashboard, et conserver une trace, [une application dédiée](https://github.com/1024pix/pix-db-stats/blob/36c673e75f9013a495b4abd104847a8382cc4b3d/lib/infrastructure/database-stats-repository.js#L63) interroge la table `pg_stat_activity` pour récupérer les requêtes en cours depuis, par exemple, une minute. Nous remarquons ce jour-là une nouvelle requête, dont les temps d'exécution dépassent 10 minutes à plusieurs reprises.
+
+```sql
+UPDATE "organization-learners" SET "isDisabled" = $1, "updatedAt" = CURRENT_TIMESTAMP WHERE "organizationId" = $2 AND "isDisabled" = FALSE;
+```
+
+Cette requête est exécutée lors de l'import du fichier XML, et désactive tous les élèves d'un établissement. Est-il normal que son exécution prenne autant de temps ? La table compte 22 millions de lignes, ce qui est raisonnable, mais ne comporte pas d'index sur les champs de filtre `organizationId` et `isDisabled`. Pour en avoir le cœur net, nous exécutons la requête en production sur le même établissement.
+
+```sql
+BEGIN TRANSACTION;
+
+EXPLAIN (ANALYZE, VERBOSE)
+UPDATE "organization-learners" (..) WHERE "organizationId" = 1234 (..)
+
+ROLLBACK;
+```
+
+Nous constatons tout d'abord que la requête prend moins de 100 ms, et ensuite qu'elle utilise un index partiel sur l'un des champs de filtre (comme quoi, la création d'index ne doit pas être un automatisme). C'est une découverte surprenante : sa durée d'exécution était de 10 minutes. Suspectant une contrainte extérieure, nous exécutons la requête plusieurs fois à intervalles réguliers. C'est bien cela : suivant le moment, elle peut être rapide (< 100 ms) ou lente ( > 1 minute). Nous nous arrêtons alors pour réfléchir : soit la base de données dispose de moins de ressources au moment où la requête s'exécute (CPU, RAM), soit la requête attend l'acquisition d'un verrou sur la table. En inspectant les métriques sur la période où la requête était lente, on voit un pic d'I/O en lecture d'un facteur 10. Comme le traffic HTTP est resté à peu près constant sur cette période, nous consultons les VACUUM : il y en a bien eu un sur cette période.
+
+Nous faisons face à deux possibilités : soit c'est le VACUUM qui bloque cette requête, soit c'est une autre requête. En théorie, il est possible d'exécuter cette requête et d'obtenir les verrous qu'elle sollicite avec le [lock tree](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking).
+
+En pratique, une fois revenu de la pause-déjeuner, nous avons choisi une solution plus radicale, mais dont les effets seraient clairs : arrêter le VACUUM automatique sur cette table.
+
+```sql
+ALTER TABLE "organization-learners" SET (autovacuum_enabled = false);
+```
+
+A la fin de l'après-midi, le constat est sans appel : à traffic constant, il n'y a plus aucun import XML en erreur, et la durée moyenne d'import tombe à 5 secondes. Loin de clarifier la situation, nous faisant maintenant face à un autre problème. Nous pensions que c'était l'afflux de demandes qui causait le problème de performance, mais il semble plutôt que ce sont les conséquences qui causent le problème : les données sont tellement modifiées dans cette table que ce sont les opérations de maintenance (libération de l'espace par VACUUM ) qui entrent en conflit sur l'utilisation des ressources. Même si nous régulons le rythme des imports avec une queue, il nous faudra toujours trouver un moyen d'exécuter les opérations de maintenance.
+
+Deux pistes s'offrent à nous : exécuter le VACUUM sur une période de faible activité (la nuit par exemple), ou l'exécuter plus souvent pour que sa durée soit plus courte et impacte moins l'activité. Le VACUUM est hautement configurable, [notamment sur une table](https://www.postgresql.org/docs/current/sql-createtable.html#SQL-CREATETABLE-STORAGE-PARAMETERS). Mais comment trouver le bon réglage sans impacter le service ? Nous pourrions modifier chaque réglage et observer son résultat en production, ou le faire sur un environnement avec des jeux de données représentatifs, avec des tests automatisés pour créer du traffic. A court terme, aucune des ces deux pistes n'est facile à mettre en oeuvre. Il y a même une autre piste qui permet de réduire la fréquence des VACUUM en diminuant le nombre de dead tuples crées par les UPDATE: le [HOT update](https://www.cybertec-postgresql.com/en/hot-updates-in-postgresql-for-better-performance/). Que faire ?
+
+Nous décidons de réactiver le VACUUM et de reprendre le sujet le lendemain.
+
+## vendredi 22: Eurêka
+
+A notre retour le lendemain, on constate que la nuit n'est pas une période de faible activité: des imports XML sont sortis en erreur cette nuit, et le traffic a repris de plus belle dès 7h. On enlève à nouveau le VACUUM.
+
+Nous reprenons l'analyse du traitement d'import XML en espérant y découvrir quelque chose qui nous aurait échappé. Avec l'équipe qui a développé l'import, nous créons des tests automatisés pour observer si plusieurs imports sur des établissements différent peuvent créer des contentions, si d'autres appels API accédant à cette table sont en cause. Nous commençons à mieux comprendre le traitement, envisageons des restructurations du traitement pour moins solliciter la base de donnés. A vrai dire, nous oscillons entre des sentiments de contrôle en acquérant des connaissances, et de la frustration en constatant qu'aucune solution simple n'apparaît.
+
+C'est alors qu'à 11h52, une nouvelle alerte se déclenche: la base de données est de nouveau injoignable. Nous regardons les requêtes longues, et quelle surprise.
+
+```sql
+/* path: /api/campaign-participations */
+UPDATE "organization-learners" SET "isDisabled" = FALSE
+```
+
+Le silence se fait sur le Meet. Nous sommes incrédules. Une requête qui réécrit toute la table est en cours d'exécution.
+Nous consultons les locks : cette requête est active et bloque tous les imports XML en cours.
+Un court moment, nous pensons à un développeur qui se serait trompé d'environnement, mais le commentaire en tête de requête indique bien que c'est un appel API. Ceux qui se demandent comment nous avons pu lier requête SQL et endpoint HTTP consulteront avec profit le monkey-patching de [Request](https://github.com/1024pix/pix/blob/8e8e454f2b576d26a6b0dabbb384e2414c307393/api/lib/infrastructure/monitoring-tools.js#L117) dans Hapi et celui de [QueryBuiler.toSQL](https://github.com/1024pix/pix/blob/8e8e454f2b576d26a6b0dabbb384e2414c307393/api/db/knex-database-connection.js#L55) dans Knex.
+
+[Le code correspondant](https://github.com/1024pix/pix/blob/360aab2e4d75fee18840b4ea684d93647ee14533/api/lib/infrastructure/repositories/campaign-participant-repository.js#L42) confirme rapidement cette hypothèse : la PR portant ce bug a été mergée il y a plus de deux mois.
+
+La première réaction est d'arrêter tout de suite la requête, et de bloquer l'accès à la route concernée.
+Cela a l'effet attendu : les SQL requêtes en attente sont dépilées, la BDD accepte de nouvelles connexions, et le traffic reprend.
+
+La deuxième réaction est d'inspecter le contenu de la table, dont tous les enregistrements doivent en théorie avoir la valeur FALSE. Nous pensons déjà à restaurer les données depuis un dump, mais surprise : les données sont intactes ! Les valeurs TRUE et FALSE sont réparties de manière valide.
+
+Un soulagement est perceptible chez tous les participants : on passe de suite [au bugfix](https://github.com/1024pix/pix/pull/7133), qui se retrouve en production deux heures plus tard. Nous réactivons la route et le VACUUM dans la foulée. Et d'un coup, tout redevient normal. A la fin de la journée, la situation est confirmée : la source problème était un bug sur une route API.
+
+## Avec le recul
 
 - les journaux de bord <https://ut7.fr/blog/2014/11/06/un-outils-pour-les-grands.html>
-- l'espace disque
-  - la gestion des transactions PG
-  - le VACUUM <https://postgrespro.com/community/books/internals>
 - Fake it de TDD et tests de couverture
-- le taggage des requêtes SQL avec la route APi avec asyncLocalStorage
 - le dashboard Steampipe
-- tous comme les biais cognitifs, avec [l'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect). 
+- tous comme les biais cognitifs, avec [l'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect).
