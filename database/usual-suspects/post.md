@@ -129,8 +129,7 @@ Un soulagement est perceptible chez tous les participants : on passe tout de sui
 
 ## La morale de cette histoire ?
 
-Maintenant que la situation est revenue à la normale, nous pouvons souffler un peu, et prendre du recul.
-Comment faire pour que cette situation ait moins de probabilité de se produire à l'avenir, et si elle se produit, comment limiter son impact ? 
+Maintenant que la situation est revenue à la normale, nous pouvons souffler un peu, et prendre du recul. Comment faire pour que cette situation ait moins de probabilité de se produire à l'avenir, et si elle se produit, comment limiter son impact ? Je n'aborderai pas le classique post-mortem, qui a bien eu lieu, pour aborder d'autres points plus "meta".
 
 ### TDD: fake it
 
@@ -151,16 +150,27 @@ Le troisième est d'ajouter des règles de gestion le plus lentement possible à
 Dans le cas qui nous intéresse ici, le "Fake it" n'a pas été suivi de l'écriture d'un autre test - ou le "Fake it" n'était pas intentionnel. Il a toutefois eu des conséquences inattendues, sur l'ensemble de l'API, parce que l'implémentation est du SQL sur une base de données. En règle générale, il est facile de tester la mise à jour d'un enregistrement, mais [difficile de tester que le reste n'a pas été modifié](https://github.com/GradedJestRisk/web-log/blob/master/Automated-testing-database.md#tables-as-global-variables). Dans notre cas, cela est simple à tester, mais si la requête de mise à jour faisait 200 lignes de long avec des jointures sur plusieurs tables, bon courage ! 
 
 
-### Se faire aider : le lint
+### Se faire aider
 
-Si vous ne le saviez pas encore, j'aime les linter pour leur capacité à me laisser penser à autre chose qu'aux problèmes triviaux. Ici, cette solution nous tend les bras: un UPDATE sur un table sans WHERE, voilà qui est suspect. Même mon client de BDD me le signale à l'exécution. 
+Si vous ne le saviez pas encore, j'aime les linter pour leur capacité à me laisser penser à autre chose qu'aux problèmes triviaux. Ici, cette solution nous tend les bras: un UPDATE sur un table sans WHERE, voilà qui est suspect. Même mon client de BDD me le demande à l'exécution : are you sure to update all table content ? 
 
 Comme nous utilisons la librairie Knex, et qu'un plugin eslint dédié existe, [la route est toute tracée](https://github.com/AntonNiklasson/eslint-plugin-knex/pull/24). Si cette règle avait été active, la CI serait sortie en erreur sur la PR d'origine. Le développeur aurait alors eu le choix de désactiver l'alerte (via code local), ou de corriger l'implémentation.
 
 ### Se souvenir
 
-les journaux de bord <https://ut7.fr/blog/2014/11/06/un-outils-pour-les-grands.html>
+Cet article paraît presque un an après les faits. Je ne fais plus partie de l'équipe Captains et je ne travaille plus pour Pix. D'autres membres de l'équipe sont, eux aussi, partis. Comment faire pour que tout ce que nous avons appris à cette occasion ne soit pas perdu, effacé petit à petit de la mémoire ? Et, plus simplement, si j'étais parti en vacances la semaine suivante et que les mêmes symptômes apparaissaient ?
+
+Nous utilisons chez Pix, pour les évènements qui nous semblent significatifs, [les journaux de bord](https://ut7.fr/blog/2014/11/06/un-outils-pour-les-grands.html). Le principe est simple : écrire sur une nouvelle page, chaque jour, ce qui s'est passé. Comme on ne sait pas à quoi cela va servir, ni où on va, chacun décide de ce qu'il écrira. 
+
+Dans l'histoire que je vous ai racontée, nous avons consulté pendant plusieurs jours des dizaines de métriques, des pages de log, consulté beaucoup de documentation. Ecrire un journal de bord, c'était choisir de garder tel fait et pas un autre, avoir un dashboard suffisamment parlant pour en faire une copie d'écran, et aussi se dire qu'on pouvait un peu oublier pour libérer de l'espace mental. Ecrire ce qu'on a fait, c'était aussi prendre conscience du chemin qu'on avait suivi, et se rendre compte parfois qu'en prenant un raccourci, nous nous étions perdus.
+
+Vous trouverez [ici](http://dev.null) les journaux de cette période. Si vous les lisez, j'espère que vous sentirez à quel point ils sont précieux.
 
 ### Se méfier
 
-Biais cognitifs, avec [l'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect).
+Je garde le plus évident, mais aussi le plus difficile pour la fin. Ce que je retiens de cette histoire, ce n'est pas que les requêtes SQL continuent à tourner après exécution du client, ni même qu'on a vu une migration de base de données finie et pas finie (et [nous ne saurons jamais pourquoi](https://github.com/1024pix/pix/pull/7182)). 
+
+Ce que je retiens, c'est que nous avons passé 3 jours à chercher au même endroit, persuadé que le coupable était notre ennemi juré d'import XML. Même si chaque jour apportait des faits qui contredisaient cette hypothèse, nous avons échafaudé des hypothèses pour prouver que c'était toujours lui. Nous avions déjà décidé depuis le début : il était coupable.
+
+Il nous a fallu du temps pour détourner le regard, chercher ailleurs, car pour cela il fallait s'outiller, réfléchir. 
+L'avez-vous reconnu, ce biais cognitif connu sous le nom [d'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect) ?
