@@ -125,11 +125,42 @@ Cela a l'effet attendu : les SQL requêtes en attente sont dépilées, la BDD ac
 
 La deuxième réaction est d'inspecter le contenu de la table, dont tous les enregistrements doivent en théorie avoir la valeur FALSE. Nous pensons déjà à restaurer les données depuis un dump, mais surprise : les données sont intactes ! Les valeurs TRUE et FALSE sont réparties de manière valide.
 
-Un soulagement est perceptible chez tous les participants : on passe de suite [au bugfix](https://github.com/1024pix/pix/pull/7133), qui se retrouve en production deux heures plus tard. Nous réactivons la route et le VACUUM dans la foulée. Et d'un coup, tout redevient normal. A la fin de la journée, la situation est confirmée : la source problème était un bug sur une route API.
+Un soulagement est perceptible chez tous les participants : on passe tout de suite [au bugfix](https://github.com/1024pix/pix/pull/7133), qui se retrouve en production deux heures plus tard. Nous réactivons la route et le VACUUM dans la foulée. Et d'un coup, tout redevient normal. A la fin de la journée, la situation est confirmée : la source du problème était un bug sur une route API, pas un problème de performance.
 
-## Avec le recul
+## La morale de cette histoire ?
 
-- les journaux de bord <https://ut7.fr/blog/2014/11/06/un-outils-pour-les-grands.html>
-- Fake it de TDD et tests de couverture
-- le dashboard Steampipe
-- tous comme les biais cognitifs, avec [l'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect).
+Maintenant que la situation est revenue à la normale, nous pouvons souffler un peu, et prendre du recul.
+Comment faire pour que cette situation ait moins de probabilité de se produire à l'avenir, et si elle se produit, comment limiter son impact ? 
+
+### TDD: fake it
+
+Les tests automatisés sont obligatoires chez Pix. Pourtant, aucun test automatisé ne sortait en erreur sur la CI, alors qu'un bug était présent depuis un mois en production. Pourquoi ?
+
+[Le test existant](https://github.com/1024pix/pix/blob/5427dcc3ae2fd55c1e4d17497a01ce8dc8261a75/api/tests/integration/infrastructure/repositories/campaign-participant-repository_test.js#L82) vérifie que la propriété a été mise à jour sur l'enregistrement, mais ne vérifie pas que la propriété n'a pas été modifiée sur les autres enregistrements. D'ailleurs, le cas de test n'utilise qu'un seul enregistrement: le comportement n'était même pas observable. La version corrigée comporte bien [le test manquant](https://github.com/1024pix/pix/blob/36723cf7164a319d84646902b1a0d84283091c74/api/tests/integration/infrastructure/repositories/campaign-participant-repository_test.js#L98).
+
+Cela correspond au pattern [Missing Unit Test](http://xunitpatterns.com/Production%20Bugs.html) de Meszaros. Il écrit que la cause racine est la suivante:  l'équipe est focalisée sur les tests métiers plutôt que sur l'écriture de tests unitaires en TDD. Chez Pix, et dans l'équipe qui a écrit ce code, le TDD est pourtant pratiqué. Alors ? Meszaros ajoute que cela peut aussi se produire lorsque l'équipe fait du TDD, mais s'emballe et écrit du code sans avoir de test unitaire en erreur pour les guider.
+
+Regardons cela de près. TDD est présenté comme une technique qui permet d'obtenir du code "sans bugs". Cela est vrai, mais il y a un pré-requis : une validation par des humains. Les tests ne peuvent pas s'auto-valider. Je connais trois moyens de s'assurer que les tests sont corrects. 
+
+Le premier est de vérifier que la règle de gestion vérifiée par le test est correcte, autrement dit : lorsque j'écris mon test (en échec), je vérifie qu'il décrit bien ce que je veux implémenter. Cela peut paraître évident, mais dans certains cas, le besoin métier peut être complexe : l'écriture du test devient un moyen de vérifier ce que nous en avons compris.
+
+Le deuxième est de pratiquer la falsifiabilité : on ne peut pas démontrer que le test est correct en général, mais on peut démontrer qu'il est incorrect sur un cas particulier. Pour trouver ce cas particulier, dès que le test passe, effectuons des mutations dans l'implémentation : modifions-la, puis relançons le test. Si le test continue à passer, alors il ne nous protège pas contre ce comportement. Charge à nous de modifier le test pour qu'il teste réellement ce que nous voulons tester. Lorsqu'il sort à nouveau en erreur, nous pouvons rétablir l'implémentation. Ce genre de test, appelé "test de mutation" peut se faire manuellement lors de l'implémentation ou de la revue de code. 
+
+Le troisième est d'ajouter des règles de gestion le plus lentement possible à l'implémentation, en utilisant le pattern "Fake it". En faisant cela, nous sommes obligés d'ajouter des cas de tests pour obtenir l'implémentation finale, ce qui améliore la couverture de chaque cas de test. Une stratégie classique de "Fake it" pour les assertions sur les valeurs de retour est de renvoyer une constante ; pour les assertions sur une source de données, mettre à jour tous les enregistrements au lieu d'un seul. Ce n'est pas si simple de faire semblant : si vous travaillez en pair programming, une personne peut écrire le test et l'autre l'implémentation.
+
+Dans le cas qui nous intéresse ici, le "Fake it" n'a pas été suivi de l'écriture d'un autre test - ou le "Fake it" n'était pas intentionnel. Il a toutefois eu des conséquences inattendues, sur l'ensemble de l'API, parce que l'implémentation est du SQL sur une base de données. En règle générale, il est facile de tester la mise à jour d'un enregistrement, mais [difficile de tester que le reste n'a pas été modifié](https://github.com/GradedJestRisk/web-log/blob/master/Automated-testing-database.md#tables-as-global-variables). Dans notre cas, cela est simple à tester, mais si la requête de mise à jour faisait 200 lignes de long avec des jointures sur plusieurs tables, bon courage ! 
+
+
+### Se faire aider : le lint
+
+Si vous ne le saviez pas encore, j'aime les linter pour leur capacité à me laisser penser à autre chose qu'aux problèmes triviaux. Ici, cette solution nous tend les bras: un UPDATE sur un table sans WHERE, voilà qui est suspect. Même mon client de BDD me le signale à l'exécution. 
+
+Comme nous utilisons la librairie Knex, et qu'un plugin eslint dédié existe, [la route est toute tracée](https://github.com/AntonNiklasson/eslint-plugin-knex/pull/24). Si cette règle avait été active, la CI serait sortie en erreur sur la PR d'origine. Le développeur aurait alors eu le choix de désactiver l'alerte (via code local), ou de corriger l'implémentation.
+
+### Se souvenir
+
+les journaux de bord <https://ut7.fr/blog/2014/11/06/un-outils-pour-les-grands.html>
+
+### Se méfier
+
+Biais cognitifs, avec [l'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect).
