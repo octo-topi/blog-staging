@@ -129,9 +129,9 @@ Un soulagement est perceptible chez tous les participants : on passe tout de sui
 
 ## La morale de cette histoire ?
 
-Maintenant que la situation est revenue à la normale, nous pouvons souffler un peu, et prendre du recul. Comment faire pour que cette situation ait moins de probabilité de se produire à l'avenir, et si elle se produit, comment limiter son impact ? Je n'aborderai pas le classique post-mortem, qui a bien eu lieu, pour aborder d'autres points plus "meta".
+Maintenant que la situation est revenue à la normale, nous pouvons souffler un peu, et prendre du recul. Comment faire pour que cette situation ait moins de probabilité de se produire à l'avenir, et si elle se produit, comment limiter son impact ? Je n'aborderai pas le classique post-mortem, qui a bien eu lieu. Abordons aborder d'autres points plus "méta".
 
-### TDD: fake it
+### Se mettre en échec, volontairement
 
 Les tests automatisés sont obligatoires chez Pix. Pourtant, aucun test automatisé ne sortait en erreur sur la CI, alors qu'un bug était présent depuis un mois en production. Pourquoi ?
 
@@ -150,13 +150,13 @@ Le troisième est d'ajouter des règles de gestion le plus lentement possible à
 Dans le cas qui nous intéresse ici, le "Fake it" n'a pas été suivi de l'écriture d'un autre test - ou le "Fake it" n'était pas intentionnel. Il a toutefois eu des conséquences inattendues, sur l'ensemble de l'API, parce que l'implémentation est du SQL sur une base de données. En règle générale, il est facile de tester la mise à jour d'un enregistrement, mais [difficile de tester que le reste n'a pas été modifié](https://github.com/GradedJestRisk/web-log/blob/master/Automated-testing-database.md#tables-as-global-variables). Dans notre cas, cela est simple à tester, mais si la requête de mise à jour faisait 200 lignes de long avec des jointures sur plusieurs tables, bon courage ! 
 
 
-### Se faire aider
+### S'assurer quand on grimpe 
 
-Si vous ne le saviez pas encore, j'aime les linter pour leur capacité à me laisser penser à autre chose qu'aux problèmes triviaux. Ici, cette solution nous tend les bras: un UPDATE sur un table sans WHERE, voilà qui est suspect. Même mon client de BDD me le demande à l'exécution : are you sure to update all table content ? 
+Si vous ne le saviez pas encore, j'aime les linter pour leur capacité à me laisser penser à autre chose qu'aux problèmes triviaux.. ou pour s'assurer que j'y ai effectivement pensé. Ici, une vérification automatisée nous tend les bras: un UPDATE sur un table sans WHERE, voilà qui est suspect. Même mon client de BDD me le demande à l'exécution : are you sure to update all table content ? 
 
-Comme nous utilisons la librairie Knex, et qu'un plugin eslint dédié existe, [la route est toute tracée](https://github.com/AntonNiklasson/eslint-plugin-knex/pull/24). Si cette règle avait été active, la CI serait sortie en erreur sur la PR d'origine. Le développeur aurait alors eu le choix de désactiver l'alerte (via code local), ou de corriger l'implémentation.
+Comme nous utilisons la librairie Knex, et qu'un plugin eslint dédié existe, [la route est toute tracée](https://github.com/AntonNiklasson/eslint-plugin-knex/pull/24). Si cette règle avait été active, la CI serait sortie en erreur sur la PR d'origine. Le développeur aurait alors eu pu corriger l'implémentation. Bien sûr, dans les cas où cet usage est souhaité, il peut désactiver cette règle dans ce script uniquement.
 
-### Se souvenir
+### Se souvenir, raconter son histoire
 
 Cet article paraît presque un an après les faits. Je ne fais plus partie de l'équipe Captains et je ne travaille plus pour Pix. D'autres membres de l'équipe sont, eux aussi, partis. Comment faire pour que tout ce que nous avons appris à cette occasion ne soit pas perdu, effacé petit à petit de la mémoire ? Et, plus simplement, si j'étais parti en vacances la semaine suivante et que les mêmes symptômes apparaissaient ?
 
@@ -164,13 +164,20 @@ Nous utilisons chez Pix, pour les évènements qui nous semblent significatifs, 
 
 Dans l'histoire que je vous ai racontée, nous avons consulté pendant plusieurs jours des dizaines de métriques, des pages de log, consulté beaucoup de documentation. Ecrire un journal de bord, c'était choisir de garder tel fait et pas un autre, avoir un dashboard suffisamment parlant pour en faire une copie d'écran, et aussi se dire qu'on pouvait un peu oublier pour libérer de l'espace mental. Ecrire ce qu'on a fait, c'était aussi prendre conscience du chemin qu'on avait suivi, et se rendre compte parfois qu'en prenant un raccourci, nous nous étions perdus.
 
-Vous trouverez [ici](http://dev.null) les journaux de cette période. Si vous les lisez, j'espère que vous sentirez à quel point ils sont précieux.
+Vous trouverez [ici](http://dev.null) les journaux de cette période. Si vous les lisez, j'espère que vous sentirez comme moi à quel point ils sont précieux.
 
-### Se méfier
+### Se méfier, de soi-même
 
-Je garde le plus évident, mais aussi le plus difficile pour la fin. Ce que je retiens de cette histoire, ce n'est pas que les requêtes SQL continuent à tourner après exécution du client, ni même qu'on a vu une migration de base de données finie et pas finie (et [nous ne saurons jamais pourquoi](https://github.com/1024pix/pix/pull/7182)). 
+Je garde le plus évident, mais aussi le plus difficile pour la fin. Ce que je retiens de cette histoire, ce n'est pas que les requêtes SQL continuent à tourner après exécution du client, ni même qu'on a vu une migration de base de données finie et pas finie en même temps ([nous ne saurons jamais pourquoi](https://github.com/1024pix/pix/pull/7182)). 
 
 Ce que je retiens, c'est que nous avons passé 3 jours à chercher au même endroit, persuadé que le coupable était notre ennemi juré d'import XML. Même si chaque jour apportait des faits qui contredisaient cette hypothèse, nous avons échafaudé des hypothèses pour prouver que c'était toujours lui. Nous avions déjà décidé depuis le début : il était coupable.
 
-Il nous a fallu du temps pour détourner le regard, chercher ailleurs, car pour cela il fallait s'outiller, réfléchir. 
-L'avez-vous reconnu, ce biais cognitif connu sous le nom [d'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect) ?
+Il nous en a fallu du temps pour détourner le regard, pour chercher ailleurs. Vous souvenez-vous de cette fin d'après-midi, avec ce bug, où vous êtes sûr qu'il est dû à quelque chose tout proche ? Cela fait trois heures que vous vous le dites "Allez, juste cinq minutes de plus", parce que bon cinq minutes ce n'est rien, et vous le sentez, c'est tout prêt. Et puis vous levez les yeux, vous comprenez qu'il n'y a plus personne dans l'open-space, qu'il est passé 19h. Dans votre IDE sont ouverts .. cinquante fichiers ? Avec un peu de malchance, vous arrivez à vous persuader que ce temps n'est pas perdu, et vous continuez : c'est le [sunken cost fallacy](https://thedecisionlab.com/biases/the-sunk-cost-fallacy).
+
+Nous nous sommes entêtés à chercher la cause de ce comportement dans cet import, car "la seule chose qui avait changé, c'était qu'on était à la rentrée". Puisque tout allait bien auparavant, il ne pouvait pas y avoir de bug. Le fait que deux évènements surviennent en même temps nous fait penser que l'un est la cause de l'autre, or.. [corrélation n'est pas causalité](https://en.wikipedia.org/wiki/Correlation_does_not_imply_causation). D'ailleurs, cela ne peut pas être un bug, sinon il se serait déjà produit depuis la dernière mise en production, et nous avons vérifié le changelog. Mais les testeurs savent que pour un bug, pour vivre heureux, il faut vivre caché (allez d'ailleurs voir le "Grand plan to multiply" de [Culture code](https://publication.octo.com/en/download-whitepaper-culture-code)).
+
+Pour faire bonne mesure, je pourrais aussi mentionner [l'effet lampadaire](https://en.wikipedia.org/wiki/Streetlight_effect): nous avons cherché nos clefs sous le lampadaire de l'import XML, parce que là tout est éclairé. Forcément, nous y avons déjà passé tant de temps que c'est un endroit familier, rassurant: nous connaissons presque tous les recoins. Aller ailleurs ? Mais aller où ? Il fait nuit noire.
+
+Les bugs, les problèmes qui nous résistent, nous mettent dans des états inhabituels, pour sûr. Sachant que nos capacités de jugement, bien humaines, sont en plus altérées par le caractère stressant de la situation, ralentissons et regardons autour de nous. Il ne s'agit pas d'explorer frénétiquement toutes les pistes. Il s'agit, de temps en temps, de faire une pause et de se demander: quelle est l'hypothèse que je fais, que je tiens pour sûre, évidente, et qui pourrait expliquer ce comportement si elle était fausse ?
+
+Et maintenant, je vous laisse à votre production !
