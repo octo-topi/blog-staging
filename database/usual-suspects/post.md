@@ -50,7 +50,7 @@ J'ai effectué la majeure partie de ma carrière professionnelle sur des traitem
 
 Dans les API REST, l'objectif est que chaque appel soit rapide, et traite un petit ensemble cohésif de données. Mettre à disposition un endpoint qui accepte une grande quantité de données, ou effectue des actions sur une grande quantité de données, présente des [difficultés](https://jensrantil.github.io/posts/downsides-of-batch-apis/). Dans notre cas, l'import de fichier XML via API est une opération de batch. Elle engendre de nombreuses requêtes SQL, dont certaines sont longues. Ces requêtes longues [ne font pas bon ménage](https://joinhandshake.com/blog/our-team/postgresql-and-lock-queue/) avec une requête de modification de table.
 
-> The real root cause of this issue was that we tried to run a migration while there was a long running query on the users table. Long running queries are usually considered a Bad Idea™, and we regularly try to find long running and slow queries and remove them from the application.
+\ > The real root cause of this issue was that we tried to run a migration while there was a long running query on the users table. Long running queries are usually considered a Bad Idea™, and we regularly try to find long running and slow queries and remove them from the application.
 
 Curieusement, cet import de fichier XML nous était déjà bien connu...pour ses problèmes de performance. Avant d'aller plus loin, je fais les présentations. Pix permet au grand public de tester et certifier ses compétences numériques. Chaque utilisateur crée son compte dans l'application et démarre son parcours. Pix adresse aussi un autre public : les élèves de l'éducation nationale. Dans ce cas, chaque classe suit un parcours particulier, prescrit par son professeur. Pour cela, un responsable d'établissement importe dans Pix la liste des élèves, au format XML. La taille de ce fichier XML dépend directement de la taille de l'établissement : il peut atteindre plusieurs dizaines de milliers de lignes. Il serait en théorie possible, à chaque inscription d'un élève dans le SI de l'éducation nationale, de faire un appel API à Pix, mais ce n'est pas la solution en place.
 
@@ -131,7 +131,7 @@ Un soulagement est perceptible chez tous les participants : on passe tout de sui
 
 ## La morale de cette histoire ?
 
-> CHERISH YOUR BUGS. STUDY THEM.
+\> CHERISH YOUR BUGS. STUDY THEM.
 
 [John Gall, The systems bible](https://x.com/sysquotes/status/1133401845152526341)
 
