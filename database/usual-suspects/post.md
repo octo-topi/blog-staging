@@ -168,10 +168,8 @@ Cet article paraît presque un an après les faits. Je ne fais plus partie de l'
 
 Nous utilisons chez Pix, pour les évènements qui nous semblent significatifs, [les journaux de bord](https://ut7.fr/blog/2014/11/06/un-outils-pour-les-grands.html). Le principe est simple : écrire sur une nouvelle page, chaque jour, ce qui s'est passé. Comme on ne sait pas à quoi cela va servir, ni où on va, chacun décide de ce qu'il écrira. 
 
-Dans l'histoire que je vous ai racontée, nous avons consulté pendant plusieurs jours des dizaines de métriques, des pages de log, consulté beaucoup de documentation. Ecrire un journal de bord, c'était choisir de garder tel fait et pas un autre, avoir un dashboard suffisamment parlant pour en faire une copie d'écran, et aussi se dire qu'on pouvait un peu oublier pour libérer de l'espace mental. Ecrire ce qu'on a fait, c'était aussi prendre conscience du chemin qu'on avait suivi, et se rendre compte parfois qu'en prenant un raccourci, nous nous étions perdus.
-
-Vous trouverez [ici](http://dev.null) les journaux de cette période. Si vous les lisez, j'espère que vous sentirez comme moi à quel point ils sont précieux.
-
+Dans l'histoire que je vous ai racontée, nous avons consulté pendant plusieurs jours des dizaines de métriques, des pages de log, consulté beaucoup de documentation. Écrire un journal de bord, c'était choisir de garder tel fait et pas un autre, avoir un dashboard suffisamment parlant pour en faire une copie d'écran, et aussi se dire qu'on pouvait un peu oublier pour libérer de l'espace mental. Écrire ce qu'on a fait, c'était aussi prendre conscience du chemin qu'on avait suivi, et se rendre compte parfois qu'en prenant un raccourci, nous nous étions perdus.
+²
 ### Se méfier, de soi-même
 
 Je garde le plus évident, mais aussi le plus difficile pour la fin. Ce que je retiens de cette histoire, ce n'est pas que les requêtes SQL continuent à tourner après exécution du client, ni même qu'on a vu une migration de base de données finie et pas finie en même temps ([nous ne saurons jamais pourquoi](https://github.com/1024pix/pix/pull/7182)). 
