@@ -1,23 +1,28 @@
-# Staging
-
-## Writing an article
-
-### Constraints
+# Staging area for OCTO blog posts
 
 OCTO blog use Google Docs and custom scripts.
+
+## Process
+
+### Write post
+
+Write your post, bending your markdown usage as follows.
 
 #### Unsupported
 
 The following items are ignored:
+
 - alignment
 - justification
 - color, size, font
+- code blocks using fences "```"
 
-#### Allowed
+#### Supported
 
 ##### Natively in markdown
 
-The following elements from markdown are handled:
+The following elements from markdown are supported:
+
 - bold
 - italic
 - strikethrough
@@ -30,7 +35,8 @@ The following elements from markdown are handled:
 
 ###### Quotes
 
-It does not support quote natively. The custom syntax is the following.
+Quotes are not supported natively. 
+You need to get the following in GoogleDoc to get it working.
 
 ```text
 > myquote
@@ -38,15 +44,15 @@ NEWLINE
 NEWLINE
 ```
 
-In order to manage this, markdown quote cannot be used, so here is the workaround.
+But the ">" character is stripped at import, so here is the workaround :
+- escape the ">" character using the backslash "\"
+- after import on GoogleDoc, add MANUALLY 2 newlines.
 
 ```text
 \> myquote
 ```
 
-Newlines will have to be added manually in Google docs.
-
-## Check content
+### Lint
 
 Checks:
 
@@ -65,24 +71,24 @@ npm run lint:fix
 
 And adjust rules in [configuration](./.mardownlint.jsonc)
 
-## Ask for review
+### Ask for review
 
-## Take review in to account
+### Take feedback into account
 
-## Replace links
+### Merge the pull request
+
+### Replace internal links (if any)
 
 In order to test links before PR is merged, links targets the pull request itself.
 
-Before publishing : 
-- merge pull request
-- replace link to PR by link to `main` branch
-- run link again to check
-- push-force
+After merging the pull request :
+- replace links to PR by links to `main` branch
+- run lint again to check for dead links
+- push-force on `main`
 
+### Publish
 
-## Publish
-
-Generate HTML version
+Generate HTML version.
 
 ```shell
 npm run generate-html
@@ -91,6 +97,7 @@ npm run generate-html
 Paste in Google Docs.
 
 Then do manual stuff:
+
 - add 2 line returns after quotes
 - copy/paste code blocks with Ctrl/Shift/V
 
@@ -100,6 +107,6 @@ Add categories and short version.
 
 Publish.
 
-## Monitor
+### Monitor
 
 [](https://github.com/octo-topi/blog-staging/graphs/traffic)
