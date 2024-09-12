@@ -16,6 +16,7 @@ The following items are ignored:
 - justification
 - color, size, font
 - code blocks using fences "```"
+- code blocks using backtick "`foo`"
 
 #### Supported
 
@@ -86,7 +87,11 @@ After merging the pull request :
 - run lint again to check for dead links
 - push-force on `main`
 
-### Publish
+### Import in Google
+
+In Google drive, create a new "Doc" document using blog template.
+
+Name it using `preview.md`.
 
 Generate HTML version.
 
@@ -94,18 +99,42 @@ Generate HTML version.
 npm run generate-html
 ```
 
+Open the generated HTML document in Firefox.
+
 Paste in Google Docs.
 
-Then do manual stuff:
+### Fix typos
 
-- add 2 line returns after quotes
-- copy/paste code blocks with Ctrl/Shift/V
+Check warnings and fix back the markdown version.
 
-Preview.
+### Fix unsupported markdown features
 
-Add categories and short version.
+Quotes: add 2 line returns after quote body.
 
-Publish.
+Code blocks: copy/paste unformatted (Ctrl/Shift/V).
+
+### Add metadata
+
+Select "Blog OCTO" entry menu
+
+Choose: 
+- main category = Software Engineering
+- secondary category = Craft
+
+Add preview from `preview.md`
+
+Save.
+
+Click on preview, check the URL in pop-up match the one expected in  `preview.md`.
+
+Check the rendering browsing URL:
+- look for typo;
+- check quotes and code blocks are correctly rendered.
+
+#### Publish
+
+Publish. Check URL and preview rendering in welcome page.
+Have a cup of tea and relax, you've done well.
 
 ### Monitor
 
