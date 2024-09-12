@@ -172,7 +172,7 @@ function handle(error) {
 }
 ```
 
-[source](https://github.com/1024pix/pix/blob/dev/api/lib/application/error-manager.js#L349-L351)
+[source](https://github.com/1024pix/pix/blob/6c0db46f36a8ffe8bb8c388ede000e58fb31387c/api/lib/application/error-manager.js#L349-L351)
 
 Il existe cependant des cas où les règles de gestion ne sont pas implémentées dans le use-case : les exceptions levées sont interceptées par l'appelant, comme dans le cas ci-dessous.
 
