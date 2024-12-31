@@ -55,32 +55,46 @@ SET statement_timeout = 60000;
 
 Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens. Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files: all the changes made by your transaction are now dead tuples. I would be delighted to tell you about this dead stuff, as it's a great way to learn MVCC, but I'm running short of time. You should these tuples take disk space. This disk space will be reused for other tuples (on this table) after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but take resources (CPU and I/O), so if you updated much data, database response time may increase when the AUTO-VACUUM does its job.  
 
-
 ### Don't mix clients and server
 
-Do NOT connect to the database server using a remote shell if using VM, neither connect to container if you use docker. Always use a plain SQL client, like psql, **remotely**. 
+Do NOT connect to the database server using a remote shell (if using VM), neither connect to container (if you use docker). Always use a plain SQL client, like `psql`, **remotely**. 
 
-Connecting locally can lead to nasty situations ( killing a process to stop a query stops the database, [etc.](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/)). As a developer, you cannot know all side effects. To be on the safe side, do not mix client with server concerns. 
+Doing things locally on the server can lead to nasty situations :
+- to stop a query, you kill the corresponding OS process ... and the database goes into recovery mode;
+- some healthcheck query runs into the server, [causing it to](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/) crash (!). 
+ 
+As a developer, you're not expected each and every side effects. To be on the safe side, do not mix client with server concerns. 
 
-You need to launch some batch operations from the server, to import some huge CSV data file or launch long-running queries, "just once" ? You may be tempted to do it from the database server, to prevent timeout or security concerns. I strongly suggest to use a separate client, like some one-off container if using a DBaaS, or a dedicated scheduler.
-
+You need to import a huge CSV data file or launch long-running queries, "just once" ? You may be tempted to do it from the database server, to prevent timeout or security concerns. Sure. But I strongly suggest to use a separate client, like some one-off container if using a DBaaS, or a dedicated scheduler.
 
 ## In the emergency room
 
+You've followed all previous rules and, well, bad things are actually happening. What can you do ? You can exercise before bad things happens, so you can keep a cold head when things turns hot, telephone keep ringing and your manager keep sneaking over your shoulder. So, read the following and practice with a colleague who play the devil's role, pushing bugs and running rogue queries into (a maybe fake) production.
+
 ### Locks are NOT evil
 
-[Lock tree](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking)
+ Some API calls are way too long, and you found using `pg_stat_activity` that the underlying SQL query is under execution, waiting for a lock. You mumble against locks, but think twice. Locks are good : without them, no concurrency can ever happen. PostgreSQL locks are fine-grained (on row, partition, table) and many tricks are performed so, except for DDL, "reader doesn't lock writers, and writer doesn't block readers".
 
+What's bad is resource starving : if your query is waiting for a lock to be granted, it's because another query has not released it. Locks are managed in FIFO queue: there is no shortcut to have lock granted sooner. What you need is to find the blocking query, and check why it hasn't released the lock yet. 
 
+If your transaction spans several queries (if you create a transaction explicitly with `BEGIN TRANSACTION` keyword to do so), two more rules applies:
+- locks are requested as late as possible, not at the beginning of the transaction;
+- locks are released at the end of the transaction.
+
+That means a transaction can stop after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.  
+
+Well, to find who's not releasing the lock, [pg_locks] native view is the way to go. As it's not human friendly, and list a lock per row, use [this version](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) which displays the lock tree. 
+
+Here, session 3 is blocked by session 2, itself blocked by session 1. The root blocking session, session 1,  stays on the first line, and each indent shows the session it blocks, session 2. The lock held by session 1 is on `foo` table has not been released, because the session 1 is waiting for lock on `bar` table to be granted. Now it's your job to know this lock has not been granted. 
 
 ### Keep contact, cause the database won't
 
 What happened to the query you launched from your laptop, just before you spill your coffee ? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home ? 
 
-These queries are similar to orphaned process : their parent process are not alive anymore. The query is running in the server (the database) but the client is gone. What will happen then ?
+These queries are similar to orphaned process : their parent process are not alive anymore. The query is 
+was running in the server (the database) but the client is gone. What will happen then ?
 
-
-You may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here even remote one-off container times out. And an upstream proxy times out, as in [HTTP 504 error code](504 Gateway Timeout)
+Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. And an upstream proxy times out, as in [HTTP 504 error code](504 Gateway Timeout)
 
 So you should plan for failure as [in 12-factor app](https://12factor.net/disposability).
 
