@@ -94,23 +94,26 @@ What happened to the query you launched from your laptop, just before you spill 
 These queries are similar to orphaned process : their parent process are not alive anymore. The query is 
 was running in the server (the database) but the client is gone. What will happen then ?
 
-Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. And an upstream proxy times out, as in [HTTP 504 error code](504 Gateway Timeout)
+Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. Timeout are not evil, they're a way to ensure you don't wait forever, with a call stack growing forever. You should plan for failure as [in 12-factor app](https://12factor.net/disposability). 
 
-So you should plan for failure as [in 12-factor app](https://12factor.net/disposability).
+Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query ? Frameworks differs : by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket.  Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
 
-PostgreSQL will generally NOT be notified of client disconnection, unless your database client get notified of your attempt to stop the query (eg. sending SIGINT signal with Ctrl-C in `psql`).
-
-[HapiJs](https://github.com/hapijs/hapi/issues/3528)
-[NodePG](https://github.com/brianc/node-postgres/issues/773)
+If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone ? By default, PostgreSQL will generally NOT know about client disconnection. He is notified only if your client notify him gracefully before leaving, eg. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last !) chapter. 
 
 ### Know how to terminate
 
-Someone/thing will connect to production and run a query you don't want him/it to run.
+Someone/thing has connected to production and started a query, but you don't want this query to run anymore.
 
-It may be because the :
-- query is wrong, and corrupts data;
-- the query is greedy on resources, and slow down everyone;
-- the query is long, and you badly need your ZDD migration to run.
+It may be because :
+- the client is gone and the query alone is useless; 
+- the query is wrong, and corrupts data (a bug);
+- the query is greedy on resources, and slow down everyone (a bug ?);
+- the query is long, and you badly need your ZDD database migration to run.
 
+The only proper way to do this is using a SQL client and call one of these methods:
+- `pg_cancel_backend($PID)`;
+- `pg_terminate_backend($PID, $TIMEOUT)`.
 
-Add backward reference to vacuum.
+These methods, internally, send SIGINT and SIGTERM signals to linux $PID processes. Do not jump to conclusion you can do this by yourself using `kill` command, that would cause a database recovery, which require service interruption.
+
+Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTO-VACUUM can happen afterwards (you remember [Lock are not evil](#locks-are-not-evil), don't you ?). 
