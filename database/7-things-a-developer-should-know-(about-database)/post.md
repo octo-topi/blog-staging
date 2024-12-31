@@ -1,53 +1,95 @@
-# 7 things a developer should know about database
+# 7 things a developer should know about databases
 
-## Observe your database
+I dedicate this post to Michel Vayssade. 15 years ago, your courses mixed high abstraction with down-to-earth concretion, in your demanding and unadorned style. What a joy to reap again the benefit of them in understanding databases !
 
-When bad things happen in production, it's too late to realize you don't know what is happening.
+## Why should I care ?
 
-Executed queries: `log_min_statement_duration`
-Running queries: `pg_stat_activity`
-Executed queries: `pg_stat_statements`
+99% of the time, developer doesn't have to care about database. As long as they practice the basics they learned in initial training (a sound - and versioned - data model, consistency with transaction, and some index for performance), they don't have to think much about it. The database is a nice black box. As for me, a web developer, I enjoy learning database internals for fun: it gives me the kind of thrill I only got in systems programming courses.   
 
-## Ride safe in production
+Over the years, I've come to realize that some bits of what I learned from internals were useful for anyone. Actually, these bits may come and bite you harshly in production. So, instead of laughing under my breath when these things happen to others, I'm going to share them now. 
 
-Make it hard to do something wrong.
+My first idea was to produce "an emergency kit", but thanks to Tom Kyte (from the introduction of his book "Effective Oracle by Design") I've included preventive knowledge, especially concurrency. As we have to know so many things, I've kept the list short. For the same reasons, I only cover PostgreSQL, being the most used relational database these days by our clients. 
 
-Do NOT connect in write mode.
+## Preventive healthcare
+
+### Know your database
+
+> First things first: before going live, make your database observable.
+
+When bad things will happen in production (and they will), it will too late to realize you don't know what is actually happening. From the project's onset, in the [walking skeleton](https://wiki.c2.com/?WalkingSkeleton) - the first time code is deployed on a remote environment, you should know which queries are under execution in the database.
+
+A native PG view does exactly that : [pg_stat_activity](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW). It mentions which user is executing which query on which database, and the status of this query: it is waiting for the disk, is it waiting for a lock ? Increase [track_activity_query_size](https://www.postgresql.org/docs/current/runtime-config-statistics.html#GUC-TRACK-ACTIVITY-QUERY-SIZE) to get the full query text, and set [application_name](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-APPLICATION-NAME) when connecting.
+
+Once you've got this set and easily accessible (some PaaS offer a web view), you need to know what happened at a specific time, eg. when the response time increased last friday night. Again, a built-in feature exists, which logs queries completion in database logs. You can enable it for queries which exceed some duration, say 10 seconds using [log_min_duration_statements](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-MIN-DURATION-STATEMENT) parameter. I advise to try logging all queries: if your logs get too big, you can always reduce the retention size. Most platforms come with built-in monitoring tools to get CPU, RAM and I/O (disk and network). If you send these metrics and your query logs into a dataviz tool, you'll ready in case something happen in production.  
+
+If you still need more, like optimizing your queries, you'll need a statistics tool. While optimization should be done at the application level, using an [APM](https://en.wikipedia.org/wiki/Application_performance_management), you can get statistics quickly in the database using [pg_stat_statements](https://www.postgresql.org/docs/current/pgstatstatements.html). It's not active by default, as it add some overhead, but it's worth throwing a glance.
+
+### Concurrency is a concretion
+
+Concurrency is not an abstraction. You may think concurrency is a concern for programming langage designers or architects, something you shouldn't worry about, something that has been taken care of at the beginning of the project. Especially in database. Well, if you want to ride full throttle, beware of concurrency.
+
+Let's consider the worst case: we deploy a REST API back-end on a PaaS which offers horizontal auto-scaling, plus DBaS. If we want to max out the database performance, we should consider 2 levels : inside the database, and outside the database. You want a small pool, saturated with threads waiting for connections.
+
+Inside the database : configure the [maximum number of connections](https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-MAX-CONNECTIONS) properly, according first to the count of CPU core and then I/O technology (SSD/HDD). A rule of thumb is, for SSD, connections = `2 * cpu_core_count`. If you configure a higher figure, the global response may **increase**. To understand why, read carefully [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why). If you use a DBaaS, this will be done for you, but you must understand why they choose such value.
+
+Outside the database : the database dictate the maximum number of connections, which means any connection request from your backend will bounce back if this number is reached. To avoid this, and for others motives I will not delve into here, you must use a connection pool. There are many options, but usually for REST backend, the pool is into your backend container, as a library. So to make proper use of all connections the database can handle while scaling your containers, make sure each backend connection pool opens **at most** `max_connections / backend_container_count`. I didn't mention how many connections it should use at least : to answer that, you have to do performance tests.    
+
+
+### Ride safe
+
+Connecting to production to monitor queries using any general-purpose client, say `psql`, is risky. If your database user can query tables, and you paste some long query in (what you thought was) the development environment, you can slow down the whole database. Of course, you can even corrupt data if you have write privileges. Your boss may reply "but you should take care of what you're doing". I disagree.
+
+> Make it hard to do something wrong.
+
+If you can't get a read-only account, make your session read-only.
 ```postgresql
 SET default_transaction_read_only = ON;
 ```
 
-Even though, abort your query automatically pass a time.
+And please do so programmatically, using a pre-connection hook like [.psqlrc](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-FILES-PSQLRC) file.
+
+When you session is read-only, prevent long-running queries by setting a timeout (here, one minute).
 ```postgresql
 SET statement_timeout = 60000;
 ```
 
-## Connect only through remote database client for usual tasks
+Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens. Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files: all the changes made by your transaction are now dead tuples. I would be delighted to tell you about this dead stuff, as it's a great way to learn MVCC, but I'm running short of time. You should these tuples take disk space. This disk space will be reused for other tuples (on this table) after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but take resources (CPU and I/O), so if you updated much data, database response time may increase when the AUTO-VACUUM does its job.  
+
+
+### Don't mix clients and server
 
 Do NOT connect to the database server using a remote shell if using VM, neither connect to container if you use docker. Always use a plain SQL client, like psql, **remotely**. 
 
-Connecting locally can lead to nasty situations ( killing a process to stop a query stops the database, [etc.](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/)). Nobody can know how much side effects, and to be on the safe side, do not mess client with server concerns. 
+Connecting locally can lead to nasty situations ( killing a process to stop a query stops the database, [etc.](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/)). As a developer, you cannot know all side effects. To be on the safe side, do not mix client with server concerns. 
 
-We may be tempted to do so to launch some batch operations, because you don't have a scheduler.   
+You need to launch some batch operations from the server, to import some huge CSV data file or launch long-running queries, "just once" ? You may be tempted to do it from the database server, to prevent timeout or security concerns. I strongly suggest to use a separate client, like some one-off container if using a DBaaS, or a dedicated scheduler.
 
-## If you lose contact, the database will not look after you
 
-Remember this query you launched from your laptop in a bar, but then the hotspot went out ? Or that query your colleague started before lunch, but had to leave for personal and urgent matters ? In such situations, you need to know if the query is still running, and maybe to stop it. 
+## In the emergency room
 
-You may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Well, even remote one-off container times out. And an upstream proxy times out, as in [HTTP 504 error code](504 Gateway Timeout)
+### Locks are NOT evil
+
+[Lock tree](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking)
+
+
+
+### Keep contact, cause the database won't
+
+What happened to the query you launched from your laptop, just before you spill your coffee ? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home ? 
+
+These queries are similar to orphaned process : their parent process are not alive anymore. The query is running in the server (the database) but the client is gone. What will happen then ?
+
+
+You may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here even remote one-off container times out. And an upstream proxy times out, as in [HTTP 504 error code](504 Gateway Timeout)
 
 So you should plan for failure as [in 12-factor app](https://12factor.net/disposability).
 
-PostgreSQL will generally not be notified of client disconnection, unless your database client get notified of your attempt to stop the query (eg. sending SIGINT signal with Ctrl-C in `psql`).
-
-
+PostgreSQL will generally NOT be notified of client disconnection, unless your database client get notified of your attempt to stop the query (eg. sending SIGINT signal with Ctrl-C in `psql`).
 
 [HapiJs](https://github.com/hapijs/hapi/issues/3528)
 [NodePG](https://github.com/brianc/node-postgres/issues/773)
 
-
-
-## Know how to terminate
+### Know how to terminate
 
 Someone/thing will connect to production and run a query you don't want him/it to run.
 
@@ -57,12 +99,4 @@ It may be because the :
 - the query is long, and you badly need your ZDD migration to run.
 
 
-## Know your locks 
-
-[Lock tree](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking)
-
-
-## Manage connexions
-Pools and concurrency.
-Application scaling.
-
+Add backward reference to vacuum.
