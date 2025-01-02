@@ -36,7 +36,7 @@ The following elements from markdown are supported:
 
 ###### Quotes
 
-Quotes are not supported natively. 
+Quotes are not supported natively.
 You need to get the following in GoogleDoc to get it working.
 
 ```text
@@ -46,6 +46,7 @@ NEWLINE
 ```
 
 But the ">" character is stripped at import, so here is the workaround :
+
 - escape the ">" character using the backslash "\"
 - after import on GoogleDoc, add MANUALLY 2 newlines.
 
@@ -83,6 +84,7 @@ And adjust rules in [configuration](./.mardownlint.jsonc)
 In order to test links before PR is merged, links targets the pull request itself.
 
 After merging the pull request :
+
 - replace links to PR by links to `main` branch
 - run lint again to check for dead links
 - push-force on `main`
@@ -117,7 +119,8 @@ Code blocks: copy/paste unformatted (Ctrl/Shift/V).
 
 Select "Blog OCTO" entry menu
 
-Choose: 
+Choose:
+
 - main category = Software Engineering
 - secondary category = Craft
 
@@ -128,6 +131,7 @@ Save.
 Click on preview, check the URL in pop-up match the one expected in  `preview.md`.
 
 Check the rendering browsing URL:
+
 - look for typo;
 - check quotes and code blocks are correctly rendered.
 

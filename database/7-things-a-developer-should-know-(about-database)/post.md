@@ -4,11 +4,11 @@ I dedicate this post to Michel Vayssade. 15 years ago, your courses mixed high a
 
 ## Why should I care ?
 
-99% of the time, developer doesn't have to care about database. As long as they practice the basics they learned in initial training (a sound - and versioned - data model, consistency with transaction, and some index for performance), they don't have to think much about it. The database is a nice black box. As for me, a web developer, I enjoy learning database internals for fun: it gives me the kind of thrill I only got in systems programming courses.   
+99% of the time, developer doesn't have to care about database. As long as they practice the basics they learned in initial training (a sound - and versioned - data model, consistency with transaction, and some index for performance), they don't have to think much about it. The database is a nice black box. As for me, a web developer, I enjoy learning database internals for fun: it gives me the kind of thrill I only got in systems programming courses.
 
-Over the years, I've come to realize that some bits of what I learned from internals were useful for anyone. Actually, these bits may come and bite you harshly in production. So, instead of laughing under my breath when these things happen to others, I'm going to share them now. 
+Over the years, I've come to realize that some bits of what I learned from internals were useful for anyone. Actually, these bits may come and bite you harshly in production. So, instead of laughing under my breath when these things happen to others, I'm going to share them now.
 
-My first idea was to produce "an emergency kit", but thanks to Tom Kyte (from the introduction of his book "Effective Oracle by Design") I've included preventive knowledge, especially concurrency. As we have to know so many things, I've kept the list short. For the same reasons, I only cover PostgreSQL, being the most used relational database these days by our clients. 
+My first idea was to produce "an emergency kit", but thanks to Tom Kyte (from the introduction of his book "Effective Oracle by Design") I've included preventive knowledge, especially concurrency. As we have to know so many things, I've kept the list short. For the same reasons, I only cover PostgreSQL, being the most used relational database these days by our clients.
 
 ## Preventive healthcare
 
@@ -32,8 +32,7 @@ Let's consider the worst case: we deploy a REST API back-end on a PaaS which off
 
 Inside the database : configure the [maximum number of connections](https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-MAX-CONNECTIONS) properly, according first to the count of CPU core and then I/O technology (SSD/HDD). A rule of thumb is, for SSD, connections = `2 * cpu_core_count`. If you configure a higher figure, the global response may **increase**. To understand why, read carefully [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why). If you use a DBaaS, this will be done for you, but you must understand why they choose such value.
 
-Outside the database : the database dictate the maximum number of connections, which means any connection request from your backend will bounce back if this number is reached. To avoid this, and for others motives I will not delve into here, you must use a connection pool. There are many options, but usually for REST backend, the pool is into your backend container, as a library. So to make proper use of all connections the database can handle while scaling your containers, make sure each backend connection pool opens **at most** `max_connections / backend_container_count`. I didn't mention how many connections it should use at least : to answer that, you have to do performance tests.    
-
+Outside the database : the database dictate the maximum number of connections, which means any connection request from your backend will bounce back if this number is reached. To avoid this, and for others motives I will not delve into here, you must use a connection pool. There are many options, but usually for REST backend, the pool is into your backend container, as a library. So to make proper use of all connections the database can handle while scaling your containers, make sure each backend connection pool opens **at most** `max_connections / backend_container_count`. I didn't mention how many connections it should use at least : to answer that, you have to do performance tests.
 
 ### Ride safe
 
@@ -42,6 +41,7 @@ Connecting to production to monitor queries using any general-purpose client, sa
 > Make it hard to do something wrong.
 
 If you can't get a read-only account, make your session read-only.
+
 ```postgresql
 SET default_transaction_read_only = ON;
 ```
@@ -49,21 +49,23 @@ SET default_transaction_read_only = ON;
 And please do so programmatically, using a pre-connection hook like [.psqlrc](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-FILES-PSQLRC) file.
 
 When you session is read-only, prevent long-running queries by setting a timeout (here, one minute).
+
 ```postgresql
 SET statement_timeout = 60000;
 ```
 
-Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens. Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files: all the changes made by your transaction are now dead tuples. I would be delighted to tell you about this dead stuff, as it's a great way to learn MVCC, but I'm running short of time. You should these tuples take disk space. This disk space will be reused for other tuples (on this table) after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but take resources (CPU and I/O), so if you updated much data, database response time may increase when the AUTO-VACUUM does its job.  
+Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens. Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files: all the changes made by your transaction are now dead tuples. I would be delighted to tell you about this dead stuff, as it's a great way to learn MVCC, but I'm running short of time. You know should these tuples take disk space. This disk space will be reused for other tuples (on this table) after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but take resources (CPU and I/O), so if you updated much data, database response time may increase when the AUTO-VACUUM does its job.
 
 ### Don't mix clients and server
 
-Do NOT connect to the database server using a remote shell (if using VM), neither connect to container (if you use docker). Always use a plain SQL client, like `psql`, **remotely**. 
+Do NOT connect to the database server using a remote shell (if using VM), neither connect to container (if you use docker). Always use a plain SQL client, like `psql`, **remotely**.
 
 Doing things locally on the server can lead to nasty situations :
+
 - to stop a query, you kill the corresponding OS process ... and the database goes into recovery mode;
-- some healthcheck query runs into the server, [causing it to](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/) crash (!). 
- 
-As a developer, you're not expected each and every side effects. To be on the safe side, do not mix client with server concerns. 
+- some healthcheck query runs into the server, [causing it to](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/) crash (!).
+
+As a developer, you're not expected each and every side effects. To be on the safe side, do not mix client with server concerns.
 
 You need to import a huge CSV data file or launch long-running queries, "just once" ? You may be tempted to do it from the database server, to prevent timeout or security concerns. Sure. But I strongly suggest to use a separate client, like some one-off container if using a DBaaS, or a dedicated scheduler.
 
@@ -75,45 +77,48 @@ You've followed all previous rules and, well, bad things are actually happening.
 
  Some API calls are way too long, and you found using `pg_stat_activity` that the underlying SQL query is under execution, waiting for a lock. You mumble against locks, but think twice. Locks are good : without them, no concurrency can ever happen. PostgreSQL locks are fine-grained (on row, partition, table) and many tricks are performed so, except for DDL, "reader doesn't lock writers, and writer doesn't block readers".
 
-What's bad is resource starving : if your query is waiting for a lock to be granted, it's because another query has not released it. Locks are managed in FIFO queue: there is no shortcut to have lock granted sooner. What you need is to find the blocking query, and check why it hasn't released the lock yet. 
+What's bad is resource starving : if your query is waiting for a lock to be granted, it's because another query has not released it. Locks are managed in FIFO queue: there is no shortcut to have lock granted sooner. What you need is to find the blocking query, and check why it hasn't released the lock yet.
 
 If your transaction spans several queries (if you create a transaction explicitly with `BEGIN TRANSACTION` keyword to do so), two more rules applies:
+
 - locks are requested as late as possible, not at the beginning of the transaction;
 - locks are released at the end of the transaction.
 
 That means a transaction can stop after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.  
 
-Well, to find who's not releasing the lock, [pg_locks] native view is the way to go. As it's not human friendly, and list a lock per row, use [this version](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) which displays the lock tree. 
+Well, to find who's not releasing the lock, [pg_locks] native view is the way to go. As it's not human friendly, and list a lock per row, use [this version](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) which displays the lock tree.
 
-Here, session 3 is blocked by session 2, itself blocked by session 1. The root blocking session, session 1,  stays on the first line, and each indent shows the session it blocks, session 2. The lock held by session 1 is on `foo` table has not been released, because the session 1 is waiting for lock on `bar` table to be granted. Now it's your job to know this lock has not been granted. 
+Here, session 3 is blocked by session 2, itself blocked by session 1. The root blocking session, session 1,  stays on the first line, and each indent shows the session it blocks, session 2. The lock held by session 1 is on `foo` table has not been released, because the session 1 is waiting for lock on `bar` table to be granted. Now it's your job to know this lock has not been granted.
 
 ### Keep contact, cause the database won't
 
-What happened to the query you launched from your laptop, just before you spill your coffee ? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home ? 
+What happened to the query you launched from your laptop, just before you spill your coffee ? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home ?
 
-These queries are similar to orphaned process : their parent process are not alive anymore. The query is 
+These queries are similar to orphaned process : their parent process are not alive anymore. The query is
 was running in the server (the database) but the client is gone. What will happen then ?
 
-Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. Timeout are not evil, they're a way to ensure you don't wait forever, with a call stack growing forever. You should plan for failure as [in 12-factor app](https://12factor.net/disposability). 
+Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. Timeout are not evil, they're a way to ensure you don't wait forever, with a call stack growing forever. You should plan for failure as [in 12-factor app](https://12factor.net/disposability).
 
 Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query ? Frameworks differs : by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket.  Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
 
-If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone ? By default, PostgreSQL will generally NOT know about client disconnection. He is notified only if your client notify him gracefully before leaving, eg. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last !) chapter. 
+If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone ? By default, PostgreSQL will generally NOT know about client disconnection. He is notified only if your client notify him gracefully before leaving, eg. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last !) chapter.
 
 ### Know how to terminate
 
 Someone/thing has connected to production and started a query, but you don't want this query to run anymore.
 
 It may be because :
-- the client is gone and the query alone is useless; 
+
+- the client is gone and the query alone is useless;
 - the query is wrong, and corrupts data (a bug);
 - the query is greedy on resources, and slow down everyone (a bug ?);
 - the query is long, and you badly need your ZDD database migration to run.
 
 The only proper way to do this is using a SQL client and call one of these methods:
+
 - `pg_cancel_backend($PID)`;
 - `pg_terminate_backend($PID, $TIMEOUT)`.
 
 These methods, internally, send SIGINT and SIGTERM signals to linux $PID processes. Do not jump to conclusion you can do this by yourself using `kill` command, that would cause a database recovery, which require service interruption.
 
-Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTO-VACUUM can happen afterwards (you remember [Lock are not evil](#locks-are-not-evil), don't you ?). 
+Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTO-VACUUM can happen afterwards (you remember [Lock are not evil](#locks-are-not-evil), don't you ?).
