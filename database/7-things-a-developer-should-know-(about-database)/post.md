@@ -6,7 +6,7 @@ I dedicate this post to Michel Vayssade. 15 years ago, your courses mixed high a
 
 Full-stack and back-end developers, you probably don't know this - and it can get out of trouble:
 
-- `pg_stat_activity` view shows executing queries, `pg_stat_statements` shows executed queries;
+- `pg_stat_activity` view shows executing queries, `pg_stat_statements` shows executed queries, queries can be logged;
 - use a pool; make sure when scaling you do not reach max_connections;
 - activate `default_transaction_read_only` and `statement_timeout` in your sql client in production;
 - never login to production database OS/container: use a sql client instead;
@@ -30,17 +30,22 @@ My first idea was to produce "an emergency kit", but thanks to Tom Kyte (from th
 
 When bad things will happen in production (and they will), it will too late to realize you don't know what is actually happening. From the project's onset, in the [walking skeleton](https://wiki.c2.com/?WalkingSkeleton) - the first time code is deployed on a remote environment, you should know which queries are under execution in the database.
 
-A native PG view does exactly that : [pg_stat_activity](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW). It mentions which user is executing which query on which database, and the status of this query: it is waiting for the disk, is it waiting for a lock ? Increase [track_activity_query_size](https://www.postgresql.org/docs/current/runtime-config-statistics.html#GUC-TRACK-ACTIVITY-QUERY-SIZE) to get the full query text, and set [application_name](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-APPLICATION-NAME) when connecting.
+A native PG view does exactly that : [pg_stat_activity](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW). It mentions which user is executing which query on which database, and the status of this query: is it waiting for the disk, is it waiting for a lock ? 
 
-Once you've got this set and easily accessible (some PaaS offer a web view), you need to know what happened at a specific time, eg. when the response time increased last friday night. Again, a built-in feature exists, which logs queries completion in database logs. You can enable it for queries which exceed some duration, say 10 seconds using [log_min_duration_statements](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-MIN-DURATION-STATEMENT) parameter. I advise to try logging all queries: if your logs get too big, you can always reduce the retention size. Most platforms come with built-in monitoring tools to get CPU, RAM and I/O (disk and network). If you send these metrics and your query logs into a dataviz tool, you'll ready in case something happen in production.  
+Make your job easier :
+- identify the component which launched the query by setting [application_name](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNECT-APPLICATION-NAME) when connecting, e.g. with your container id;
+- display the full query text increasing [track_activity_query_size](https://www.postgresql.org/docs/current/runtime-config-statistics.html#GUC-TRACK-ACTIVITY-QUERY-SIZE).
+
+Once you've got this set and easily accessible (some PaaS offer a web view), you need to know what happened at a specific time, e.g. when the response time increased last friday night. Do it the same way you do with your nginx router: write events in the log, in standard output, and ship them using a log collector. 
+To do so, use the built-in PG feature, which logs queries upon completion. You can enable it for queries which exceed some duration, say 10 seconds using [log_min_duration_statements](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-MIN-DURATION-STATEMENT) parameter. I advise to try logging all queries: if your logs get too big, you can always reduce the retention size. Most platforms come with built-in monitoring tools to get CPU, RAM and I/O (disk and network). If you send these metrics and your query logs into a dataviz tool, you'll ready in case something happen in production.  
 
 If you still need more, like optimizing your queries, you'll need a statistics tool. While optimization should be done at the application level, using an [APM](https://en.wikipedia.org/wiki/Application_performance_management), you can get statistics quickly in the database using [pg_stat_statements](https://www.postgresql.org/docs/current/pgstatstatements.html). It's not active by default, as it add some overhead, but it's worth throwing a glance.
 
-**TL;DR: pg_stat_activity view shows executing queries, pg_stat_statements shows executed queries**
+**TL;DR: pg_stat_activity view shows executing queries, pg_stat_statements shows executed queries, queries can be logged**
 
-### Concurrency is a concretion
+### Concurrency is not an abstraction
 
-Concurrency is not an abstraction. You may think concurrency is a concern for programming langage designers or architects, something you shouldn't worry about, something that has been taken care of at the beginning of the project. Especially in database. Well, if you want to ride full throttle, beware of concurrency.
+You may think concurrency is a concern for programming langage designers or architects, something you shouldn't worry about, something that has been taken care of at the beginning of the project. Especially in database. Well, if you want to ride full throttle, beware of concurrency.
 
 Let's consider the worst case: we deploy a REST API back-end on a PaaS which offers horizontal auto-scaling, plus DBaS. If we want to max out the database performance, we should consider 2 levels : inside the database, and outside the database. You want a small pool, saturated with threads waiting for connections.
 
@@ -76,14 +81,14 @@ Sometimes, you actually need write privileges for troubleshooting. Your plan is 
 
 ### Don't mix clients and server
 
-Do NOT connect to the database server using a remote shell (if using VM), neither connect to container (if you use docker). Always use a plain SQL client, like `psql`, **remotely**.
+Always connect remotely. Do NOT connect to the database server itself using a remote shell (if using VM), neither connect to container (if using docker). 
 
-Doing things locally on the server can lead to nasty situations :
+Issuing commands directly on the database OS can lead to nasty situations :
 
-- to stop a query, you kill the corresponding OS process ... and the database goes into recovery mode;
-- some healthcheck query runs into the server, [causing it to](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/) crash (!).
+- to stop a query, you stop the corresponding OS process using `kill -9` : the database goes into recovery mode;
+- to monitor the database, you schedule a healthcheck query from the database OS : [the database crash](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/).
 
-As a developer, you're not expected each and every side effects. To be on the safe side, do not mix client with server concerns.
+As a developer, you're not expected each and every side effects of Linux process handling. To be on the safe side, do not mix client with server concerns.
 
 You need to import a huge CSV data file or launch long-running queries, "just once" ? You may be tempted to do it from the database server, to prevent timeout or security concerns. Sure. But I strongly suggest to use a separate client, like some one-off container if using a DBaaS, or a dedicated scheduler.
 
@@ -117,13 +122,13 @@ Here, session 3 is blocked by session 2, itself blocked by session 1. The root b
 What happened to the query you launched from your laptop, just before you spill your coffee ? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home ?
 
 These queries are similar to orphaned process : their parent process are not alive anymore. The query is
-was running in the server (the database) but the client is gone. What will happen then ?
+still running in the server (the database) but the client is gone. What will happen then ?
 
 Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. Timeout are not evil, they're a way to ensure you don't wait forever, with a call stack growing forever. You should plan for failure as [in 12-factor app](https://12factor.net/disposability).
 
 Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query ? Frameworks differs : by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket.  Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
 
-If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone ? By default, PostgreSQL will generally NOT know about client disconnection. He is notified only if your client notify him gracefully before leaving, eg. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last !) chapter.
+If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone ? By default, PostgreSQL will generally NOT know about client disconnection. It is notified only if your client notify him gracefully before leaving, e.g. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last !) chapter.
 
 **TL;DR: when a SQL query has started, it will run until completion - doesn't matter if the client is gone**
 
