@@ -58,7 +58,8 @@ You may think concurrency is a concern for programming langage designers or arch
 
 Let's consider the most complex case: we deploy a REST API back-end on a PaaS which offers horizontal auto-scaling, plus DBaaS. It's complex because we should provide the best service level to all clients, not knowing of much of them exists at a point in time.
 
-We should consider 2 levels: 
+We should consider 2 levels:
+
 - inside the database:
   - how to make the best use of bounded resources, namely CPU and I/O;
   - minimizing the costly operation of handling a new client connection (it involves an OS process creation);
@@ -73,6 +74,7 @@ PostgreSQL allows a maximum number of client connections, that you can [configur
 Concurrency tells you NOT to configure it considering how many clients will connect to the database. It tells you to consider your database resources - and open few connections... If you want to understand why, read carefully [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why).
 
 So, configure the maximum number of client connections considering your database :
+
 - count of CPU core;
 - I/O technology (SSD or HDD).
 
@@ -145,9 +147,9 @@ If your transaction spans several queries (if you create a transaction explicitl
 
 That means a transaction can stop after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.
 
-Well, to find who's not releasing the lock, [pg_locks] native view is the way to go. As it's not human friendly, and list a lock per row, use [this version](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) which displays the lock tree.
+Well, to find who's not releasing the lock, `pg_locks` native view is the way to go. As it's not human friendly, and list a lock per row, use [this version](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) which displays the lock tree.
 
-Here, session 3 is blocked by session 2, itself blocked by session 1. The root blocking session, session 1,  stays on the first line, and each indent shows the session it blocks, session 2. The lock held by session 1 is on `foo` table has not been released, because the session 1 is waiting for lock on `bar` table to be granted. Now it's your job to know this lock has not been granted.
+Here, session 3 is blocked by session 2, itself blocked by session 1. The root blocking session, session 1, stays on the first line, and each indent shows the session it blocks, session 2. The lock held by session 1 is on `foo` table has not been released, because the session 1 is waiting for lock on `bar` table to be granted. Now it's your job to know this lock has not been granted.
 
 ### Keep contact, cause the database won't
 
@@ -156,8 +158,7 @@ Here, session 3 is blocked by session 2, itself blocked by session 1. The root b
 
 What happened to the query you launched from your laptop, just before you spill your coffee ? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home ?
 
-These queries are similar to orphaned process: their parent process are not alive anymore. The query is
-still running in the server (the database) but the client is gone. What will happen then ?
+These queries are similar to orphaned process: their parent process are not alive anymore. The query is still running in the server (the database) but the client is gone. What will happen then ?
 
 Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. Timeout are not evil, they're a way to ensure you don't wait forever, with a call stack growing forever. You should plan for failure as [in 12-factor app](https://12factor.net/disposability).
 
@@ -184,4 +185,4 @@ The only proper way to do this is using a SQL client:
 - to cancel a query, use `pg_cancel_backend($PID)`;
 - to stop the connexion, use `pg_terminate_backend($PID, $TIMEOUT)`.
 
-Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTO-VACUUM can happen afterwards (you remember [Lock are not evil](#locks-are-not-evil), don't you ?).
+Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTOVACUUM can happen afterward (you remember [Lock are not evil](#locks-are-not-evil), don't you ?).
