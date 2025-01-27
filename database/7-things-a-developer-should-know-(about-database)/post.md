@@ -54,13 +54,35 @@ If you still need more, like optimizing your queries, you'll need a statistics t
 <!-- markdownlint-disable-next-line MD036 -->
 **TL;DR: use a pool; make sure when scaling you do not reach max_connections**
 
-You may think concurrency is a concern for programming langage designers or architects, something you shouldn't worry about, something that has been taken care of at the beginning of the project. Especially in database. Well, if you want to ride full throttle, beware of concurrency.
+You may think concurrency is a concern for programming langage designers or architects, something you shouldn't worry about, something that has been taken care of at the beginning of the project. Well, if you want to ride full throttle, make sure it has been correctly handled for the database.
 
-Let's consider the worst case: we deploy a REST API back-end on a PaaS which offers horizontal auto-scaling, plus DBaS. If we want to max out the database performance, we should consider 2 levels: inside the database, and outside the database. You want a small pool, saturated with threads waiting for connections.
+Let's consider the most complex case: we deploy a REST API back-end on a PaaS which offers horizontal auto-scaling, plus DBaaS. It's complex because we should provide the best service level to all clients, not knowing of much of them exists at a point in time.
 
-Inside the database: configure the [maximum number of connections](https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-MAX-CONNECTIONS) properly, according first to the count of CPU core and then I/O technology (SSD/HDD). A rule of thumb is, for SSD, connections = `2 * cpu_core_count`. If you configure a higher figure, the global response may **increase**. To understand why, read carefully [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why). If you use a DBaaS, this will be done for you, but you must understand why they choose such value.
+We should consider 2 levels: 
+- inside the database:
+  - how to make the best use of bounded resources, namely CPU and I/O;
+  - minimizing the costly operation of handling a new client connection (it involves an OS process creation);
+- outside the database:
+  - how to avoid network roundtrips linked to opening database connections;
+  - managing client scaling: serve a single client or many of them, fairly and efficiently.
 
-Outside the database: the database dictate the maximum number of connections, which means any connection request from your backend will bounce back if this number is reached. To avoid this, and for others motives I will not delve into here, you must use a connection pool. There are many options, but usually for REST backend, the pool is into your backend container, as a library. So to make proper use of all connections the database can handle while scaling your containers, make sure each backend connection pool opens **at most** `max_connections / backend_container_count`. I didn't mention how many connections it should use at least: to answer that, you have to do performance tests.
+#### Configure the allowed maximum number of connection
+
+PostgreSQL allows a maximum number of client connections, that you can [configure](https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-MAX-CONNECTIONS).
+
+Concurrency tells you NOT to configure it considering how many clients will connect to the database. It tells you to consider your database resources - and open few connections... If you want to understand why, read carefully [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why).
+
+So, configure the maximum number of client connections considering your database :
+- count of CPU core;
+- I/O technology (SSD or HDD).
+
+A rule of thumb is, for SSD, connections = `2 * cpu_core_count`. If you use a higher value, the global response may **increase**. If you use a DBaaS, this will be done for you, but you must understand why they choose such value.
+
+#### Use a properly-configured pool
+
+As the database dictate the maximum number of connections, any connection request from your backend will bounce back if this number is reached. You should make sure this doesn't happen. You also want to minimize creating new connections between client and database, which is costly both for databases and clients. The idea is to reuse the same connection, issuing many SQL queries against it. There are many options, but usually for REST backend, a connection pool in your backend container (as a library) is the way to go.
+
+Configure it to make sure each backend connection pool opens **at most** `max_connections / backend_container_count`. The straightforward method is to consider all clients containers are always active, and set this value on container startup. This may lead to suboptimal use when few containers are active. Dynamic pool-sizing can be considered, but this will introduce complexity ( e.g. downsize existing containers pool size when another container starts). Make sure it's worth, using performance test beforehand.
 
 ### Ride safe
 
@@ -121,7 +143,7 @@ If your transaction spans several queries (if you create a transaction explicitl
 - locks are requested as late as possible, not at the beginning of the transaction;
 - locks are released at the end of the transaction.
 
-That means a transaction can stop after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.  
+That means a transaction can stop after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.
 
 Well, to find who's not releasing the lock, [pg_locks] native view is the way to go. As it's not human friendly, and list a lock per row, use [this version](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) which displays the lock tree.
 
@@ -139,7 +161,7 @@ still running in the server (the database) but the client is gone. What will hap
 
 Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. Timeout are not evil, they're a way to ensure you don't wait forever, with a call stack growing forever. You should plan for failure as [in 12-factor app](https://12factor.net/disposability).
 
-Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query ? Frameworks differs: by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket.  Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
+Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query ? Frameworks differs: by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket. Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
 
 If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone ? By default, PostgreSQL will generally NOT know about client disconnection. It is notified only if your client notify him gracefully before leaving, e.g. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last !) chapter.
 
