@@ -182,7 +182,9 @@ It may be because:
 
 The only proper way to do this is using a SQL client:
 
-- to cancel a query, use `pg_cancel_backend($PID)`;
-- to stop the connexion, use `pg_terminate_backend($PID, $TIMEOUT)`.
+- to cancel the current query on the connexion, use `pg_cancel_backend($PID)`;
+- to stop the whole connexion, use `pg_terminate_backend($PID)`.
+
+`$PID` is the id of the process who is handling the connexion, found in `pg_stat_activity`. If you're unsure on how to do this, refer to [this ](https://www.cybertec-postgresql.com/en/terminating-database-connections-in-postgresql/).
 
 Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTOVACUUM can happen afterward (you remember [Lock are not evil](#locks-are-not-evil), don't you ?).
