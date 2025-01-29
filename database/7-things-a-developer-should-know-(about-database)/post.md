@@ -7,9 +7,9 @@ I dedicate this post to Michel Vayssade. 15 years ago, your courses mixed high a
 Full-stack and back-end developers, you probably don't know this - and it can get out of trouble:
 
 - `pg_stat_activity` view shows executing queries, `pg_stat_statements` shows executed queries, queries can be logged;
-- use a pool; make sure when scaling you do not reach max_connections;
+- use a connection pool; make sure when scaling you do not reach `max_connections`;
 - activate `default_transaction_read_only` and `statement_timeout` in your sql client in production;
-- never login to production database OS/container: use a sql client instead;
+- never login to production directly in the database OS/container: use a sql client instead;
 - if `pg_stat_activity` shows queries waiting for lock, use the lock view to find which ones got them;
 - when a SQL query has started, it will run until completion - doesn't matter if the client is gone;
 - use `pg_terminate_backend` to stop a query, and be ready for AUTOVACUUM.
@@ -200,3 +200,12 @@ The only proper way to do this is using a SQL client:
 `$PID` is the id of the process who is handling the connexion, found in `pg_stat_activity`. If you're unsure on how to do this, refer to [this](https://www.cybertec-postgresql.com/en/terminating-database-connections-in-postgresql/).
 
 Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTOVACUUM can happen afterward (you remember [Lock are not evil](#locks-are-not-evil), don't you ?).
+
+### Ask for help
+
+If you've read and applied these 7 advices, and are still in trouble, you can now ask for help to your database administrator in complete confidence. If you come to him with all the clues you've collected, his job will be much easier, and you can work as one team.
+
+A typical case is a slow query: monitoring your database, you found a query blocking many others one for a long time. This query should process few data, so it should be short-lived; but you found it's executed many times each day and last a few minutes. When you come to him with this query, he can focus on finding out why it is slow. He will use execution plans and come back to you talking about indexes, partitions and statistics, things you're not familiar with. If you had come to him saying "this database is damn slow", he would have to browse all queries by himself and make guesses, and spent much more time.
+
+Before parting, let me slip a last thing in your pocket, a quote from Mikko Hypponen.
+> Rarely is anyone thanked for the work they did to prevent the disaster that didn't happen.
