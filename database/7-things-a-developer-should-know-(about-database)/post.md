@@ -120,12 +120,24 @@ Always connect remotely. Do NOT connect to the database server itself using a re
 
 Issuing commands directly on the database OS can lead to nasty situations:
 
-- to stop a query, you stop the corresponding OS process using `kill -9`: the database goes into recovery mode;
-- to monitor the database, you schedule a healthcheck query from the database OS: [the database crash](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/).
+- to stop a query, you stop the corresponding OS process using `kill -9 $PID` and ... the database goes into recovery mode;
+- to monitor the database, you schedule a healthcheck query running in the database OS and ... [the database crash](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/).
 
-As a developer, you're not expected each and every side effects of Linux process handling. To be on the safe side, do not mix client with server concerns.
+If you don't understand why is this happening, relax. As a developer, you're not expected each and every side effects of Linux process handling. To be on the safe side, do not mix client with server concerns.
 
-You need to import a huge CSV data file or launch long-running queries, "just once" ? You may be tempted to do it from the database server, to prevent timeout or security concerns. Sure. But I strongly suggest to use a separate client, like some one-off container if using a DBaaS, or a dedicated scheduler.
+You may object you wouldn't do such things, but you need "just once":
+
+- to import a huge CSV data file, and don't want to store sensible data out of the database
+- launch long-running queries, and not worry about timeout
+
+Sure. Just because you can doesn’t mean you should.
+
+I strongly suggest to use a separate client:
+
+- if working on a Paas, use some one-off container;
+- if not, use a lightweight scheduler (some even run in the database: [pg_timetable](https://github.com/cybertec-postgresql/pg_timetable), [pg_boss](https://github.com/timgit/pg-boss)).
+
+This may appear as extra work for nothing; in fact, it will save you much trouble.
 
 ## In the emergency room
 
@@ -185,6 +197,6 @@ The only proper way to do this is using a SQL client:
 - to cancel the current query on the connexion, use `pg_cancel_backend($PID)`;
 - to stop the whole connexion, use `pg_terminate_backend($PID)`.
 
-`$PID` is the id of the process who is handling the connexion, found in `pg_stat_activity`. If you're unsure on how to do this, refer to [this ](https://www.cybertec-postgresql.com/en/terminating-database-connections-in-postgresql/).
+`$PID` is the id of the process who is handling the connexion, found in `pg_stat_activity`. If you're unsure on how to do this, refer to [this](https://www.cybertec-postgresql.com/en/terminating-database-connections-in-postgresql/).
 
 Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTOVACUUM can happen afterward (you remember [Lock are not evil](#locks-are-not-evil), don't you ?).
