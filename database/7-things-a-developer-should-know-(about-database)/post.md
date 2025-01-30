@@ -2,6 +2,8 @@
 
 I dedicate this post to Michel Vayssade. 15 years ago, your courses mixed high abstraction with down-to-earth concretion, in your demanding and unadorned style. What a joy to reap again the benefit of them in understanding databases !
 
+I also thanks all reviewers: Mathieu Le Morvan - Gabriel Adgeg (OCTO), [Anne-Marie Esteves](https://fr.linkedin.com/in/annemarieesteves) (Edwyn Tech) and [Guillaume Lelarge](https://www.postgresql.org/community/contributors/) (Dalibo).
+
 ## TL;DR
 
 Full-stack and back-end developers, you probably don't know this - and it can get out of trouble:
