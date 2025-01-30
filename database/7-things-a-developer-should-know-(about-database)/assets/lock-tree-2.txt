@@ -1,0 +1,11 @@
+    PID    |                            Lock Info                            |      State
+-----------+-----------------------------------------------------------------+------------------
+ 19635     | Connect: user flight 192.168.32.1:42198                        +| 13:22:05 started+
+           | SQL: ALTER TABLE aircrafts_data DROP COLUMN range;             +| waiting         +
+           | Acquired:                                                      +| 00:02:29 ago
+           |   AccessExclusiveLock(relation,db:flight;rel:aircrafts_data)   +|
+  => 20054 | Connect: user flight 192.168.32.1:47936                        +| 13:22:09 started+
+           | SQL: SELECT * FROM aircrafts LIMIT 1;                          +| waiting         +
+           | Waiting: AccessShareLock(relation,db:flight;rel:aircrafts_data)+| 00:02:25 ago
+           | Acquired:                                                      +|
+           |   AccessShareLock(relation,db:flight;rel:aircrafts)             |

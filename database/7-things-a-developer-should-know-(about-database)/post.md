@@ -170,22 +170,86 @@ You've followed all previous rules and, well, bad things are actually happening.
 ### Locks are NOT evil
 
 <!-- markdownlint-disable-next-line MD036 -->
-**TL;DR: if pg_stat_activity shows queries waiting for lock, use the lock view to find which ones got them**
+**TL;DR: if pg_stat_activity shows queries waiting for a lock, use the lock tree view to find which ones got them**
+
+This advice is the most complex of the whole post, so I used an example to help you get through it. Don't be afraid by the length of this section.
+
+#### locks are good
 
 Some API calls are way too long, and you found using `pg_stat_activity` that the underlying SQL query is under execution, waiting for a lock. You mumble against locks, but think twice. Locks are good: without them, no concurrency can ever happen. PostgreSQL locks are fine-grained (on row, partition, table) and many tricks are performed so, except for DDL, "reader doesn't lock writers, and writer doesn't block readers".
 
 What's bad is resource starving: if your query is waiting for a lock to be granted, it's because another query has not released it. Locks are managed in FIFO queue: there is no shortcut to have lock granted sooner. What you need is to find the blocking query, and check why it hasn't released the lock yet.
 
-If your transaction spans several queries (if you create a transaction explicitly with `BEGIN TRANSACTION` keyword to do so), two more rules apply:
+#### locks and multiple queries transaction
+
+By default, each statement is executed in a single transaction, which is implicitly commited.
+You can make your transaction spans several queries, creating a transaction explicitly with `BEGIN TRANSACTION`.
+
+If so, two more rules apply:
 
 - locks are requested as late as possible, not at the beginning of the transaction;
 - locks are released at the end of the transaction.
 
-That means a transaction can stop after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.
+That means a transaction can pause after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.
 
-Well, to find who's not releasing the lock, `pg_locks` native view is the way to go. As it's not human friendly, and list a lock per row, use [this version](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) which displays the lock tree.
+#### who's blocking ?
 
-Here, session 3 is blocked by session 2, itself blocked by session 1. The root blocking session, session 1, stays on the first line, and each indent shows the session it blocks, session 2. The lock held by session 1 is on `foo` table has not been released, because the session 1 is waiting for lock on `bar` table to be granted. Now it's your job to know this lock has not been granted.
+Well, to find who's not releasing the lock, `pg_locks` native view is not the way to go for most humans. Use [this query](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) instead, which displays the lock tree.
+
+<!-- markdownlint-disable-next-line MD033 MD045 -->
+<img src="assets/lock-tree-1.png" width="922" >
+
+First, consider the structure:
+
+- on the first line, unindented, stays the first node, with its PID 24936;
+  - this node is a session which is not blocked by anyone: it may be working, or idle;
+  - this node is a called a root node, a tree may have several root nodes (it would be a forest);
+- under each node, each indent to the right shows the session it blocks
+  - e.g. session 24936 is blocking two sessions : 19635 and 20054
+  - this can go on as deep as necessary: a session blocked may in turn block another
+
+In lock info, you find:
+
+- in `SQL`, the last query it has executed;
+- in `Acquired`, the lock it has been granted : 24936 has a `AccessExclusiveLock` lock on `aircrafts_data` table;
+- in `Waiting`, the lock it has requested and is waiting for: 19635 waits for `AccessShareLock` on `aircrafts` view.
+
+In state, you find when the session has started and its status (active or waiting).
+
+If you look at the SQL text in `pg_stats_activity`, you can't guess that 24936 is blocking 19635: the lock is on `bookings` but the SQL text mentions `aircrafts_data`. That's why you need the lock tree.
+
+#### lock and zero-downtime migration
+
+If you're not interested in ZDD, skip this section, as it's still more complexity.
+
+If you cause session 24936 to complete, what will happen ?
+You may think the other two session will be unblocked and both run. Unfortunately, no.
+The first session that requested the lock on table will get it, this is 19635 with `AccessExclusiveLock`.
+And because the `AccessExclusiveLock` is the most restrictive lock, even session 20054 with it weak `AccessShareLock` will still have to wait.
+
+When you check the lock tree, you can see that session 20054:
+
+- which was a sibling of session 19635;
+- is now its child.
+
+<!-- markdownlint-disable-next-line MD033 MD045 -->
+<img src="assets/lock-tree-2.png" width="922" >
+
+To sum up, you can't read the future directly in the lock tree, you'll have to think a little bit.
+You need to know which lock is in conflict with another: [check the documentation](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-TABLES).
+
+The scenario I chose way look strange: it's simulating database schema migration in ZDD context.
+
+To get ZDD in database schema migration:
+
+- to be executed, deployment should not be blocked (for a long time) by application queries;
+- when executing, deployment should not block (for a long time) application queries.
+
+To do so, use [pglocks](https://pglocks.org/?pglock=AccessExclusiveLock) to find out :
+
+- first, which lock your migration will request;
+- next, which application statements may prevent your migration;
+- then, which application statement will be blocked by your migration.
 
 ### Keep contact, cause the database won't
 
