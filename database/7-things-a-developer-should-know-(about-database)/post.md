@@ -93,25 +93,47 @@ Configure it to make sure each backend connection pool opens **at most** `max_co
 <!-- markdownlint-disable-next-line MD036 -->
 **TL;DR: activate default_transaction_read_only and statement_timeout in your sql client in production**
 
-Connecting to production to monitor queries using any general-purpose client, say `psql`, is risky. If your database user can query tables, and you paste some long query in (what you thought was) the development environment, you can slow down the whole database. Of course, you can even corrupt data if you have write privileges. Your boss may reply "but you should take care of what you're doing". I disagree.
+Connecting to production to monitor queries using any general-purpose client, say `psql`, can be risky. If your database user can query tables, and you paste some long query in (what you thought was) the development environment, you can slow down the whole database. Of course, you can even corrupt data if you have write privileges. Your boss may reply "but you should take care of what you're doing". I disagree.
 
 > Make it hard to do something wrong.
 
-If you can't get a read-only account, make your session read-only.
+#### read-only
+
+If you can't get a read-only account from your DBA, turn by yourself your session read-only.
 
 ```postgresql
 SET default_transaction_read_only = ON;
 ```
 
-And please do so programmatically, using a pre-connection hook like [.psqlrc](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-FILES-PSQLRC) file.
+Please do so programmatically, using a pre-connection hook like [.psqlrc](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-FILES-PSQLRC) file.
 
-When your session is read-only, prevent long-running queries by setting a timeout (here, one minute).
+#### execute short queries
+
+When your session is read-only, you cannot corrupt data. You can still hoard resources (thus degrading service level for other users) by executing resources-intensive and long-running queries. Prevent that by setting a timeout (here, one minute).
 
 ```postgresql
 SET statement_timeout = 60000;
 ```
 
-Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens. Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files: all the changes made by your transaction are now dead tuples. I would be delighted to tell you about this dead stuff, as it's a great way to learn MVCC, but I'm running short of time. You should know these tuples take disk space. This disk space will be reused for other tuples (on this table) after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but takes resources (CPU and I/O), so if you updated much data, database response time may increase when the AUTO-VACUUM does its job.
+#### do not preempt access
+
+A special case of resource hoarding is concurrent access. If you modify data, a lock should be granted, and another session may wait for it (more on this in [locks are not evil](#locks-are-not-evil)). This can be nasty if a deployment involving this resource is blocked. Set a lock timeout to ten seconds and relax.
+
+```postgresql
+SET lock_timeout = 10000;
+```
+
+#### know your rollback
+
+Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens.
+
+Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files, on the filesystem: all the changes made by your transaction are there : they are known as dead tuples. I would be delighted to tell you more, as it's a great way to learn MVCC, but I'm running short of time.
+
+These tuples take disk space, that will eventually be reused for other tuples after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but takes resources (CPU and I/O). If you updated much data, database response time may increase when the AUTOVACUUM does its job.
+
+So, when you do such things, keep on eye on response time: if it goes up, look at [pg_stat_progress_vacuum](https://www.postgresql.org/docs/current/progress-reporting.html) to check if a AUTOVACUUM has started and estimate when he will complete.
+
+Do not update huge tables, as it may lead to the dreaded `no space left on device`.
 
 ### Don't mix clients and server
 
