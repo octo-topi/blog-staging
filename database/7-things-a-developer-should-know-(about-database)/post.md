@@ -6,7 +6,7 @@ I also thanks all reviewers: Mathieu Le Morvan - Gabriel Adgeg (OCTO), [Anne-Mar
 
 ## TL;DR
 
-Full-stack and back-end developers, you probably don't know this - and it can get out of trouble:
+Full-stack and back-end developers, you probably don't know this - and it can you get out of trouble:
 
 - `pg_stat_activity` view shows executing queries, `pg_stat_statements` shows executed queries, queries can be logged;
 - use a connection pool; make sure when scaling you do not reach `max_connections`;
@@ -37,7 +37,7 @@ First things first: before going live, make your database observable.
 
 Christian Antognini in [Troubleshooting Oracle Performance](https://antognini.ch/top/)
 
-When bad things will happen in production (and they will), it will too late to realize you don't know what is actually happening. From the project's onset, in the [walking skeleton](https://wiki.c2.com/?WalkingSkeleton) - the first time code is deployed on a remote environment, you should know which queries are under execution in the database.
+When bad things will happen in production (and they will), it will be too late to realize you don't know what is actually happening. From the project's onset, in the [walking skeleton](https://wiki.c2.com/?WalkingSkeleton) - the first time code is deployed on a remote environment, you should know which queries are under execution in the database.
 
 A native PG view does exactly that: [pg_stat_activity](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW). It mentions which user is executing which query on which database, and the status of this query: is it waiting for the disk, is it waiting for a lock ?
 
@@ -47,7 +47,7 @@ Make your job easier:
 - display the full query text increasing [track_activity_query_size](https://www.postgresql.org/docs/current/runtime-config-statistics.html#GUC-TRACK-ACTIVITY-QUERY-SIZE).
 
 Once you've got this set and easily accessible (some PaaS offer a web view), you need to know what happened at a specific time, e.g. when the response time increased last friday night. Do it the same way you do with your nginx router: write events in the log, in standard output, and ship them using a log collector.
-To do so, use the built-in PG feature, which logs queries upon completion. You can enable it for queries which exceed some duration, say 10 seconds using [log_min_duration_statements](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-MIN-DURATION-STATEMENT) parameter. I advise to try logging all queries: if your logs get too big, you can always reduce the retention size. Most platforms come with built-in monitoring tools to get CPU, RAM and I/O (disk and network). If you send these metrics and your query logs into a dataviz tool, you'll ready in case something happen in production.  
+To do so, use the built-in PG feature, which logs queries upon completion. You can enable it for queries which exceed some duration, say 10 seconds using [log_min_duration_statement](https://www.postgresql.org/docs/current/runtime-config-logging.html#GUC-LOG-MIN-DURATION-STATEMENT) parameter. I advise to try logging all queries: if your logs get too big, you can always reduce the retention size. Most platforms come with built-in monitoring tools to get CPU, RAM and I/O (disk and network). If you send these metrics and your query logs into a dataviz tool, you'll be ready in case something happen in production.
 
 If you still need more, like optimizing your queries, you'll need a statistics tool. While optimization should be done at the application level, using an [APM](https://en.wikipedia.org/wiki/Application_performance_management), you can get statistics quickly in the database using [pg_stat_statements](https://www.postgresql.org/docs/current/pgstatstatements.html). It's not active by default, as it add some overhead, but it's worth throwing a glance.
 
@@ -58,7 +58,7 @@ If you still need more, like optimizing your queries, you'll need a statistics t
 
 You may think concurrency is a concern for programming langage designers or architects, something you shouldn't worry about, something that has been taken care of at the beginning of the project. Well, if you want to ride full throttle, make sure it has been correctly handled for the database.
 
-Let's consider the most complex case: we deploy a REST API back-end on a PaaS which offers horizontal auto-scaling, plus DBaaS. It's complex because we should provide the best service level to all clients, not knowing of much of them exists at a point in time.
+Let's consider the most complex case: we deploy a REST API back-end on a PaaS which offers horizontal auto-scaling, plus DBaaS. It's complex because we should provide the best service level to all clients (application containers), and their number change over time.
 
 We should consider 2 levels:
 
@@ -105,13 +105,13 @@ SET default_transaction_read_only = ON;
 
 And please do so programmatically, using a pre-connection hook like [.psqlrc](https://www.postgresql.org/docs/current/app-psql.html#APP-PSQL-FILES-PSQLRC) file.
 
-When you session is read-only, prevent long-running queries by setting a timeout (here, one minute).
+When your session is read-only, prevent long-running queries by setting a timeout (here, one minute).
 
 ```postgresql
 SET statement_timeout = 60000;
 ```
 
-Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens. Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files: all the changes made by your transaction are now dead tuples. I would be delighted to tell you about this dead stuff, as it's a great way to learn MVCC, but I'm running short of time. You know should these tuples take disk space. This disk space will be reused for other tuples (on this table) after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but take resources (CPU and I/O), so if you updated much data, database response time may increase when the AUTO-VACUUM does its job.
+Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens. Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files: all the changes made by your transaction are now dead tuples. I would be delighted to tell you about this dead stuff, as it's a great way to learn MVCC, but I'm running short of time. You should know these tuples take disk space. This disk space will be reused for other tuples (on this table) after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but takes resources (CPU and I/O), so if you updated much data, database response time may increase when the AUTO-VACUUM does its job.
 
 ### Don't mix clients and server
 
@@ -125,7 +125,7 @@ Issuing commands directly on the database OS can lead to nasty situations:
 - to stop a query, you stop the corresponding OS process using `kill -9 $PID` and ... the database goes into recovery mode;
 - to monitor the database, you schedule a healthcheck query running in the database OS and ... [the database crash](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/).
 
-If you don't understand why is this happening, relax. As a developer, you're not expected each and every side effects of Linux process handling. To be on the safe side, do not mix client with server concerns.
+If you don't understand why is this happening, relax. As a developer, you're not expected to know each and every side effects of Linux process handling. To be on the safe side, do not mix client with server concerns.
 
 You may object you wouldn't do such things, but you need "just once":
 
@@ -154,7 +154,7 @@ Some API calls are way too long, and you found using `pg_stat_activity` that the
 
 What's bad is resource starving: if your query is waiting for a lock to be granted, it's because another query has not released it. Locks are managed in FIFO queue: there is no shortcut to have lock granted sooner. What you need is to find the blocking query, and check why it hasn't released the lock yet.
 
-If your transaction spans several queries (if you create a transaction explicitly with `BEGIN TRANSACTION` keyword to do so), two more rules applies:
+If your transaction spans several queries (if you create a transaction explicitly with `BEGIN TRANSACTION` keyword to do so), two more rules apply:
 
 - locks are requested as late as possible, not at the beginning of the transaction;
 - locks are released at the end of the transaction.
