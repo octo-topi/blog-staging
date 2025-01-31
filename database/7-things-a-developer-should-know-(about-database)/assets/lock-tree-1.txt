@@ -1,0 +1,15 @@
+    PID    |                              Lock Info                              |      State
+-----------+---------------------------------------------------------------------+------------------
+ 24936     | Connect: user flight 192.168.32.1:55596                            +| 12:30:37 started+
+           | SQL: SELECT * FROM bookings LIMIT 1;                               +| waiting         +
+           | Acquired:                                                          +| 00:00:27 ago
+           |   AccessExclusiveLock(relation,db:flight;rel:aircrafts_data) + 1   +|
+           |   AccessShareLock(relation,db:flight;rel:bookings_pkey)            +|
+  => 19635 | Connect: user flight 192.168.32.1:42198                            +| 12:30:50 started+
+           | SQL: ALTER TABLE aircrafts_data DROP COLUMN range;                 +| waiting         +
+           | Waiting: AccessExclusiveLock(relation,db:flight;rel:aircrafts_data)+| 00:00:14 ago
+  => 20054 | Connect: user flight 192.168.32.1:46614                            +| 12:30:53 started+
+           | SQL: SELECT * FROM aircrafts LIMIT 1;                              +| waiting         +
+           | Waiting: AccessShareLock(relation,db:flight;   rel:aircrafts_data) +| 00:00:10 ago
+           | Acquired:                                                          +|
+           |   AccessShareLock(relation,db:flight;rel:aircrafts)                 |
