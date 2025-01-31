@@ -180,6 +180,14 @@ Have a cup of tea and relax, you've done well.
 
 ## Rules
 
+### French
+
+### English
+
+Don't mix french:
+- use `language` instead of `langage`
+- use `connection` instead of `connexion`
+
 Semicolon is never preceded by a space, and always followed by a space.
 
 ```text
