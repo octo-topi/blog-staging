@@ -71,16 +71,37 @@ We should consider 2 levels:
 
 #### Configure the allowed maximum number of connection
 
-PostgreSQL allows a maximum number of client connections that you can [configure](https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-MAX-CONNECTIONS).
+PostgreSQL allows a maximum number of client connections that you can configure : [max_connections](https://www.postgresql.org/docs/current/runtime-config-connection.html#GUC-MAX-CONNECTIONS).
 
-Concurrency tells you NOT to configure it considering how many clients will connect to the database. It tells you to consider your database resources - and open a few connections... If you want to understand why, read [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why) carefully.
+Concurrency tells you NOT to configure it considering how many clients will connect to the database. It tells you to consider your database resources - and open a few connections as possible. If you want to understand why, read [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why) carefully.
 
-So, configure the maximum number of client connections considering your database :
-
+To estimate the maximum number of client connections your database can handle effectively, you should consider database :
+- usage (REST API or datawarehouse);
 - count of CPU core;
-- I/O technology (SSD or HDD).
+- I/O technology (SSD or HDD) and number of I/O devices.
 
-A rule of thumb is, for SSD, connections = `2 * cpu_core_count`. If you use a higher value, the global response may **increase**. If you use a DBaaS, this will be done for you, but you must understand why they choose such a value.
+The key point is : **if you use a value too high, the global response time (time elapsed to process all queries) may increase**.
+
+If you use a DBaaS, this will be done for you: jump to next section.
+
+If you don't use a DBaaS, your DBA has done it for you and run performance tests to check. 
+
+If there is no DBA:
+- set a value;
+- run performance tests;
+- change the value and compare. 
+
+You can start with:
+- fixed values: `200` in a REST API, `40` for datawarehouse platform, as recommended by [pgtune](https://github.com/le0pard/pgtune/blob/9ae57d0a97ba6c597390d43b15cd428311327939/src/features/configuration/configurationSlice.js#L107);
+- do some calculation according to [Postgresql Wiki](https://wiki.postgresql.org/wiki/Number_Of_Database_Connections) below.
+
+```text
+max_connections = (core_count * 2) + effective_io_concurrency
+```
+
+`effective_io_concurrency` is the number of access the storage devices can handle simultaneously:
+- for one HDD drive, `effective_io_concurrency` = 1;
+- for one SDD drive, it will be much higher.
 
 #### Use a properly-configured pool
 
