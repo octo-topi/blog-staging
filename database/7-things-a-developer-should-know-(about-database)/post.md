@@ -197,7 +197,7 @@ That means a transaction can pause after one query, waiting for a lock grant, th
 Well, to find who's not releasing the lock, `pg_locks` native view is not the way to go for most humans. Use [this query](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) instead, which displays the lock tree.
 
 <!-- markdownlint-disable-next-line MD033 MD045 -->
-<img src="assets/lock-tree-1.png" width="922" >
+<img src="assets/lock-tree-1.png" width="913" >
 
 First, consider the structure:
 
@@ -233,7 +233,7 @@ When you check the lock tree, you can see that session 20054:
 - is now its child.
 
 <!-- markdownlint-disable-next-line MD033 MD045 -->
-<img src="assets/lock-tree-2.png" width="922" >
+<img src="assets/lock-tree-2.png" width="681" >
 
 To sum up, you can't read the future directly in the lock tree, you'll have to think a little bit.
 You need to know which lock is in conflict with another: [check the documentation](https://www.postgresql.org/docs/current/explicit-locking.html#LOCKING-TABLES).
