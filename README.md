@@ -9,6 +9,7 @@ OCTO blog use Google Docs and custom scripts.
 Create a branch and add a folder.
 
 Create the skeleton.
+
 ```shell
 mdkir assets
 touch posts.md
@@ -71,6 +72,7 @@ But the ">" character is stripped at import, so here is the workaround :
 #### Deactivate lint
 
 To use emphasis in a deep-nested section
+
 ```markdown
 
 #### a fourth-depth section
@@ -172,6 +174,22 @@ Add `published` tag.
 
 Have a cup of tea and relax, you've done well.
 
-### Monitor
+## Monitor
 
 [](https://github.com/octo-topi/blog-staging/graphs/traffic)
+
+## Rules
+
+Semicolon is never preceded by a space, and always followed by a space.
+```text
+I'm done: that's a good thing.
+```
+
+[Source](https://www.sussex.ac.uk/informatics/punctuation/colonandsemi/colon#:~:text=But%20first%20please%20note%20the,have%20been%20taught%20in%20school)
+
+Question mark are never preceded by a space.
+```text
+Are your for real ?
+```
+
+[Source](https://english.stackexchange.com/questions/4645/is-it-ever-correct-to-have-a-space-before-a-question-or-exclamation-mark)

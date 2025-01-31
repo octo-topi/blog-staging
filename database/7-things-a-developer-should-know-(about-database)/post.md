@@ -1,6 +1,6 @@
 # 7 things a developer should know about databases
 
-I dedicate this post to Michel Vayssade. 15 years ago, your courses mixed high abstraction with down-to-earth concretion, in your demanding and unadorned style. What a joy to reap again the benefit of them in understanding databases !
+I dedicate this post to Michel Vayssade. 15 years ago, your courses mixed high abstraction with down-to-earth concretion, in your demanding and unadorned style. What a joy to reap again the benefit of them in understanding databases!
 
 I also thanks all reviewers: Mathieu Le Morvan - Gabriel Adgeg (OCTO), [Anne-Marie Esteves](https://fr.linkedin.com/in/annemarieesteves) (Edwyn Tech) and [Guillaume Lelarge](https://www.postgresql.org/community/contributors/) (Dalibo).
 
@@ -16,7 +16,7 @@ Full-stack and back-end developers, you probably don't know this - and it can yo
 - when a SQL query has started, it will run until completion - doesn't matter if the client is gone;
 - use `pg_terminate_backend` to stop a query, and be ready for AUTOVACUUM.
 
-## Why should I care ?
+## Why should I care?
 
 99% of the time, developer doesn't have to care about database. As long as they practice the basics they learned in initial training (a sound - and versioned - data model, consistency with transaction, and some index for performance), they don't have to think much about it. The database is a nice black box. As for me, a web developer, I enjoy learning database internals for fun: it gives me the kind of thrill I only got in systems programming courses.
 
@@ -39,7 +39,7 @@ Christian Antognini in [Troubleshooting Oracle Performance](https://antognini.ch
 
 When bad things will happen in production (and they will), it will be too late to realize you don't know what is actually happening. From the project's onset, in the [walking skeleton](https://wiki.c2.com/?WalkingSkeleton) - the first time code is deployed on a remote environment, you should know which queries are under execution in the database.
 
-A native PG view does exactly that: [pg_stat_activity](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW). It mentions which user is executing which query on which database, and the status of this query: is it waiting for the disk, is it waiting for a lock ?
+A native PG view does exactly that: [pg_stat_activity](https://www.postgresql.org/docs/current/monitoring-stats.html#MONITORING-PG-STAT-ACTIVITY-VIEW). It mentions which user is executing which query on which database, and the status of this query: is it waiting for the disk, is it waiting for a lock?
 
 Make your job easier:
 
@@ -165,7 +165,7 @@ This may appear as extra work for nothing; in fact, it will save you much troubl
 
 ## In the emergency room
 
-You've followed all previous rules and, well, bad things are actually happening. What can you do ? You can exercise before bad things happens, so you can keep a cold head when things turns hot, telephone keep ringing and your manager keep sneaking over your shoulder. So, read the following and practice with a colleague who play the devil's role, pushing bugs and running rogue queries into (a maybe fake) production.
+You've followed all previous rules and, well, bad things are actually happening. What can you do? You can exercise before bad things happens, so you can keep a cold head when things turns hot, telephone keep ringing and your manager keep sneaking over your shoulder. So, read the following and practice with a colleague who play the devil's role, pushing bugs and running rogue queries into (a maybe fake) production.
 
 ### Locks are NOT evil
 
@@ -192,7 +192,7 @@ If so, two more rules apply:
 
 That means a transaction can pause after one query, waiting for a lock grant, thereby blocking another query. Transitively, a transaction can block many other ones.
 
-#### who's blocking ?
+#### who's blocking?
 
 Well, to find who's not releasing the lock, `pg_locks` native view is not the way to go for most humans. Use [this query](https://wiki.postgresql.org/wiki/Lock_dependency_information#Recursive_View_of_Blocking) instead, which displays the lock tree.
 
@@ -222,7 +222,7 @@ If you look at the SQL text in `pg_stats_activity`, you can't guess that 24936 i
 
 If you're not interested in ZDD, skip this section, as it's still more complexity.
 
-If you cause session 24936 to complete, what will happen ?
+If you cause session 24936 to complete, what will happen?
 You may think the other two session will be unblocked and both run. Unfortunately, no.
 The first session that requested the lock on table will get it, this is 19635 with `AccessExclusiveLock`.
 And because the `AccessExclusiveLock` is the most restrictive lock, even session 20054 with it weak `AccessShareLock` will still have to wait.
@@ -256,15 +256,15 @@ To do so, use [pglocks](https://pglocks.org/?pglock=AccessExclusiveLock) to find
 <!-- markdownlint-disable-next-line MD036 -->
 **TL;DR: when a SQL query has started, it will run until completion - doesn't matter if the client is gone**
 
-What happened to the query you launched from your laptop, just before you spill your coffee ? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home ?
+What happened to the query you launched from your laptop, just before you spill your coffee? To the query your colleague kicked before lunch on his machine (coz' it's sooo long, and fewer people are using the database at noon), but had to unplug hastily from the network to come back home?
 
-These queries are similar to orphaned process: their parent process are not alive anymore. The query is still running in the server (the database) but the client is gone. What will happen then ?
+These queries are similar to orphaned process: their parent process are not alive anymore. The query is still running in the server (the database) but the client is gone. What will happen then?
 
 Your boss may reply that nobody should ever launch queries from their desktop, cause our private laptop and network are notoriously unreliable. Adding to that, queries should be quick, not long-running. Well, you've got a point here. But even remote one-off container times out. Timeout are not evil, they're a way to ensure you don't wait forever, with a call stack growing forever. You should plan for failure as [in 12-factor app](https://12factor.net/disposability).
 
-Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query ? Frameworks differs: by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket. Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
+Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query? Frameworks differs: by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket. Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
 
-If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone ? By default, PostgreSQL will generally NOT know about client disconnection. It is notified only if your client notify him gracefully before leaving, e.g. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last !) chapter.
+If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone? By default, PostgreSQL will generally NOT know about client disconnection. It is notified only if your client notify him gracefully before leaving, e.g. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last!) chapter.
 
 ### Know how to terminate
 
@@ -277,7 +277,7 @@ It may be because:
 
 - the client is gone and the query alone is useless;
 - the query is wrong, and corrupts data (a bug);
-- the query is greedy on resources, and slow down everyone (a bug ?);
+- the query is greedy on resources, and slow down everyone (a bug?);
 - the query is long, and you badly need your ZDD database migration to run.
 
 The only proper way to do this is using a SQL client:
@@ -287,7 +287,7 @@ The only proper way to do this is using a SQL client:
 
 `$PID` is the id of the process who is handling the connexion, found in `pg_stat_activity`. If you're unsure on how to do this, refer to [this](https://www.cybertec-postgresql.com/en/terminating-database-connections-in-postgresql/).
 
-Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTOVACUUM can happen afterward (you remember [Lock are not evil](#locks-are-not-evil), don't you ?).
+Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTOVACUUM can happen afterward (you remember [Lock are not evil](#locks-are-not-evil), don't you?).
 
 ### Ask for help
 
