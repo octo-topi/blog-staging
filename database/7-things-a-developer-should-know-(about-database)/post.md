@@ -151,8 +151,8 @@ If you don't understand why this is happening, relax. As a developer, you're not
 
 You may object you wouldn't do such things, but you need "just once":
 
-- to import a huge CSV data file, and don't want to store sensible data out of the database
-- launch long-running queries, and not worry about timeout
+- to import a huge CSV data file, and don't want to store sensible data out of the database;
+- launch long-running queries, and not worry about timeout.
 
 Sure. Just because you can doesn’t mean you should.
 

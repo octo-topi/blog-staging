@@ -146,6 +146,29 @@ Quotes: add 2 line returns after quote body.
 
 Code blocks: copy/paste unformatted (Ctrl/Shift/V).
 
+Replace inline code (in green) by italics (Ctrl i).
+```markdown
+This is the dreaded `malloc` function.
+```
+
+Links containing several underscore `_` does not contains the leading underscore anymore, add it again.
+```markdown
+Do you like [snake_case_syntax](https://en.wikipedia.org/wiki/Snake_case)
+```
+If they still render unproperly, delete the underscore and try again.
+
+Bold cannot contain inline code, it is rendered incorrectly between double underscore `__foo__`
+```text
+TL;DR: __pg_stat_activity__ view shows executing queries, __pg_stat_statements__ shows executed queries, queries can be logged
+```
+
+
+### Add pictures
+
+Insert / Image / Upload from computer, choose for assets
+Add "Alt text"
+
+
 ### Add metadata
 
 Select "Blog OCTO" entry menu
@@ -159,7 +182,7 @@ Add preview from `preview.md`.
 
 Save.
 
-Click on preview, check the URL in pop-up match the one expected in  `preview.md`.
+Click on preview, check the URL in pop-up match the one expected in `preview.md`.
 
 Check the rendering browsing URL:
 
@@ -168,11 +191,17 @@ Check the rendering browsing URL:
 
 #### Publish
 
-Publish. Check URL and preview rendering in welcome page.
+Publish. 
 
-Add `published` tag.
+Check URL and preview rendering in [home page](https://blog.octo.com/).
 
-Have a cup of tea and relax, you've done well.
+Add `published` tag to the pull request.
+
+Notify :
+- OCTO by Mattermost
+- everyone else by Twitter.
+
+Have a cup of tea and relax, you've done well !
 
 ## Monitor
 
@@ -185,6 +214,7 @@ Have a cup of tea and relax, you've done well.
 ### English
 
 Don't mix french:
+
 - use `language` instead of `langage`
 - use `connection` instead of `connexion`
 
