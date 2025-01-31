@@ -6,7 +6,21 @@ OCTO blog use Google Docs and custom scripts.
 
 ### Write post
 
-Write your post, bending your markdown usage as follows.
+Create a branch and add a folder.
+
+Create the skeleton.
+```shell
+mdkir assets
+touch posts.md
+touch preview.md
+```
+
+Push the branch and open a pull request.
+Add `under development` tag.
+
+Write the TL;DR in `preview.md`, to be displayed on posts page.
+
+Write your post in `post.md`; you'll have to bend your markdown usage as follows.
 
 #### Unsupported
 
@@ -54,6 +68,17 @@ But the ">" character is stripped at import, so here is the workaround :
 \> myquote
 ```
 
+#### Deactivate lint
+
+To use emphasis in a deep-nested section
+```markdown
+
+#### a fourth-depth section
+<!-- markdownlint-disable-next-line MD036 -->
+**This is important**
+
+```
+
 ### Lint
 
 Checks:
@@ -67,17 +92,21 @@ npm run lint
 
 If exit code <> 0, run
 
-```shell
-npm run lint:fix
-```
-
 And adjust rules in [configuration](./.mardownlint.jsonc)
 
 ### Ask for review
 
+Add `ready to review` tag.
+
 ### Take feedback into account
 
+```shell
+npm run lint:fix
+```
+
 ### Merge the pull request
+
+Add `to publish` tag.
 
 ### Replace internal links (if any)
 
@@ -91,7 +120,7 @@ After merging the pull request :
 
 ### Import in Google
 
-In Google drive, create a new "Doc" document using blog template.
+In Google Drive, create a new "Doc" document using blog template.
 
 Name it using `preview.md`.
 
@@ -124,7 +153,7 @@ Choose:
 - main category = Software Engineering
 - secondary category = Craft
 
-Add preview from `preview.md`
+Add preview from `preview.md`.
 
 Save.
 
@@ -138,6 +167,9 @@ Check the rendering browsing URL:
 #### Publish
 
 Publish. Check URL and preview rendering in welcome page.
+
+Add `published` tag.
+
 Have a cup of tea and relax, you've done well.
 
 ### Monitor
