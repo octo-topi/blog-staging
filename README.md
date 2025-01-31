@@ -181,6 +181,7 @@ Have a cup of tea and relax, you've done well.
 ## Rules
 
 Semicolon is never preceded by a space, and always followed by a space.
+
 ```text
 I'm done: that's a good thing.
 ```
@@ -188,6 +189,7 @@ I'm done: that's a good thing.
 [Source](https://www.sussex.ac.uk/informatics/punctuation/colonandsemi/colon#:~:text=But%20first%20please%20note%20the,have%20been%20taught%20in%20school)
 
 Question mark are never preceded by a space.
+
 ```text
 Are your for real ?
 ```

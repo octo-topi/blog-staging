@@ -127,11 +127,11 @@ SET lock_timeout = 10000;
 
 Sometimes, you actually need write privileges for troubleshooting. Your plan is to start a transaction, do some INSERT/UPDATE/DELETE, and then rollback the transaction; as if nothing actually happens.
 
-Well, nothing has happened as far as other transaction are concerned. But something did actually happen in data files, on the filesystem: all the changes made by your transaction are there : they are known as dead tuples. I would be delighted to tell you more, as it's a great way to learn MVCC, but I'm running short of time.
+Well, nothing has happened as far as other transactions are concerned. But something did actually happen in data files, on the filesystem: all the changes made by your transaction are there : they are known as dead tuples. I would be delighted to tell you more, as it's a great way to learn MVCC, but I'm running short of time.
 
 These tuples take disk space, that will eventually be reused for other tuples after a [VACUUM](https://www.postgresql.org/docs/current/sql-vacuum.html) completes. This is done automatically, but takes resources (CPU and I/O). If you updated much data, database response time may increase when the AUTOVACUUM does its job.
 
-So, when you do such things, keep on eye on response time: if it goes up, look at [pg_stat_progress_vacuum](https://www.postgresql.org/docs/current/progress-reporting.html) to check if a AUTOVACUUM has started and estimate when he will complete.
+So, when you do such things, keep on eye on response time: if it goes up, look at [pg_stat_progress_vacuum](https://www.postgresql.org/docs/current/progress-reporting.html) to check if a AUTOVACUUM has started and estimate when it will complete.
 
 Do not update huge tables, as it may lead to the dreaded `no space left on device`.
 
@@ -145,7 +145,7 @@ Always connect remotely. Do NOT connect to the database server itself using a re
 Issuing commands directly on the database OS can lead to nasty situations:
 
 - to stop a query, you stop the corresponding OS process using `kill -9 $PID` and ... the database goes into recovery mode;
-- to monitor the database, you schedule a healthcheck query running in the database OS and ... [the database crash](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/).
+- to monitor the database, you schedule a healthcheck query running in the database OS and ... [the database crashes](https://www.cybertec-postgresql.com/en/docker-sudden-death-for-postgresql/).
 
 If you don't understand why is this happening, relax. As a developer, you're not expected to know each and every side effects of Linux process handling. To be on the safe side, do not mix client with server concerns.
 
@@ -216,7 +216,7 @@ In lock info, you find:
 
 In state, you find when the session has started and its status (active or waiting).
 
-If you look at the SQL text in `pg_stats_activity`, you can't guess that 24936 is blocking 19635: the lock is on `bookings` but the SQL text mentions `aircrafts_data`. That's why you need the lock tree.
+If you look at the SQL text in `pg_stat_activity`, you can't guess that 24936 is blocking 19635: the lock is on `bookings` but the SQL text mentions `aircrafts_data`. That's why you need the lock tree.
 
 #### lock and zero-downtime migration
 
@@ -282,10 +282,10 @@ It may be because:
 
 The only proper way to do this is using a SQL client:
 
-- to cancel the current query on the connexion, use `pg_cancel_backend($PID)`;
-- to stop the whole connexion, use `pg_terminate_backend($PID)`.
+- to cancel the current query on the connection, use `pg_cancel_backend($PID)`;
+- to stop the whole connection, use `pg_terminate_backend($PID)`.
 
-`$PID` is the id of the process who is handling the connexion, found in `pg_stat_activity`. If you're unsure on how to do this, refer to [this](https://www.cybertec-postgresql.com/en/terminating-database-connections-in-postgresql/).
+`$PID` is the id of the process who is handling the connection, found in `pg_stat_activity`. If you're unsure on how to do this, refer to [this](https://www.cybertec-postgresql.com/en/terminating-database-connections-in-postgresql/).
 
 Keep in mind that the transaction in which these queries run will be rollbacked, which means some AUTOVACUUM can happen afterward (you remember [Lock are not evil](#locks-are-not-evil), don't you?).
 
