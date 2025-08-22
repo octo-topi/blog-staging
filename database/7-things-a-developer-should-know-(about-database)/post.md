@@ -76,6 +76,7 @@ PostgreSQL allows a maximum number of client connections that you can configure 
 Concurrency tells you NOT to configure it considering how many clients will connect to the database. It tells you to consider your database resources - and open a few connections as possible. If you want to understand why, read [this post](https://github.com/brettwooldridge/HikariCP/wiki/About-Pool-Sizing#but-why) carefully.
 
 To estimate the maximum number of client connections your database can handle effectively, you should consider database :
+
 - usage (REST API or datawarehouse);
 - count of CPU core;
 - I/O technology (SSD or HDD) and number of I/O devices.
@@ -84,14 +85,16 @@ The key point is : **if you use a value too high, the global response time (time
 
 If you use a DBaaS, this will be done for you: jump to next section.
 
-If you don't use a DBaaS, your DBA has done it for you and run performance tests to check. 
+If you don't use a DBaaS, your DBA has done it for you and run performance tests to check.
 
 If there is no DBA:
+
 - set a value;
 - run performance tests;
-- change the value and compare. 
+- change the value and compare.
 
 You can start with:
+
 - fixed values: `200` in a REST API, `40` for datawarehouse platform, as recommended by [pgtune](https://github.com/le0pard/pgtune/blob/9ae57d0a97ba6c597390d43b15cd428311327939/src/features/configuration/configurationSlice.js#L107);
 - do some calculation according to [Postgresql Wiki](https://wiki.postgresql.org/wiki/Number_Of_Database_Connections) below.
 
@@ -100,6 +103,7 @@ max_connections = (core_count * 2) + effective_io_concurrency
 ```
 
 `effective_io_concurrency` is the number of access the storage devices can handle simultaneously:
+
 - for one HDD drive, `effective_io_concurrency` = 1;
 - for one SDD drive, it will be much higher.
 
@@ -286,6 +290,8 @@ Your boss may reply that nobody should ever launch queries from their desktop, c
 Many proxies have a timeout, like the proxies ahead of REST API, that's what [HTTP 504 error code](https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/504) is for. So, what happens to a REST API call that timeout, while PG is executing a query? Frameworks differs: by default, Node's HapiJs go on processing the SQl query, and when it returns the response to the front-end, it finds a closed socket. Therefore, if bad things happen in production, it may be because your front-end is making consecutive API calls, each one triggering a SQL query which times out. The same SQL query is executing again and again, using database resources for nothing. You can find such occurrences if you monitor your API queries and running SQL queries. Maybe you can [add custom code](https://github.com/hapijs/hapi/issues/3528) to ask PG to cancel the query on client disconnection, but for now you need to stop those queries.
 
 If we came back to the queries we talked about at the very beginning (coffee and lunch), what happens when the sql client is gone? By default, PostgreSQL will generally NOT know about client disconnection. It is notified only if your client notify him gracefully before leaving, e.g. if you hit Ctrl-C in `psql`. So these queries will go on. If you need to stop them, let's see how to do this properly in the next (and last!) chapter.
+
+https://www.cybertec-postgresql.com/en/tcp-keepalive-for-a-better-postgresql-experience/
 
 ### Know how to terminate
 
