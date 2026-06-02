@@ -1,0 +1,19 @@
+{
+  "name": "parcoursup",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "integration-propositions": "node src/integration-propositions.js",
+    "format": "npx prettier *.js --write",
+    "database:start": "docker compose up --wait",
+    "database:stop": "docker compose down",
+    "database:create-schema": "knex migrate:latest",
+    "database:console": "psql --dbname \"host=localhost port=5400 dbname=database user=user password=password\""
+  },
+  "license": "ISC",
+  "dependencies": {
+    "knex": "^3.2.10",
+    "pg": "^8.21.0",
+    "prettier": "^3.8.3"
+  }
+}
