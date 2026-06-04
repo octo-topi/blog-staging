@@ -2,6 +2,10 @@
 
 OCTO blog use Google Docs and custom scripts.
 
+## Setup
+
+In JetBrains tools, deactivate "Reformat code" for Markdown files, otherwise it will hard-wrap lines so the length is under 80 characters.
+
 ## Process
 
 ### Write post
