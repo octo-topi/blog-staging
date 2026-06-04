@@ -53,6 +53,13 @@ La description de la solution (et du problème) sont :
 - dans la tête du métier, du PO, du développeur ;
 - dans le code de test.
 
+Ce qui est paradoxal, c'est que le PL/SQL est globalement un langage de script autour du SQL, et que le SQL est déclaratif. Déclaratif = pas préocuppé par les détails d'implémentation, par exemple comment joindre deux ensembles.
+Or, même avec un langage déclaratif, il existe des ambiguités.
+
+```sql
+Une jointure et une sous-requête avec des NULL et de COUNT(id)
+```
+
 ### LLM
 
 Il est possible de retrouver les règles du tennis dans un programme en corrélant : 

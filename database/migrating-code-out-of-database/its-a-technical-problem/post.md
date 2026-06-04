@@ -41,7 +41,7 @@ C'est pas le procédural qui pose problème, c'est le batch.
 C'est pas le procédural qui pose problème à la traduction: on peut utiliser un parseur/codemod.
 
 
-### Orienté-objet
+## Orienté-objet
 
 L'orienté-objet n'est pas la solution à tous les problèmes.
 Il est utile pour maitriser la complexité essentielle, mais peut lui-même apporter de la complexité accidentelle.
@@ -53,7 +53,7 @@ Qu'est-ce que l'OOP :
 - grouper données et le comportement (RG) = encapsulation
 - message passing (Smalltalk)
 
-### PL/SQL
+## PL/SQL
 
 Ce qu'il y a :
 
@@ -72,13 +72,7 @@ En PL/SQL:
 - on peut accéder à toutes les données (toutes les tables, toutes les colonnes) simultanément;
 - on pourrait aussi charger un résultat SQL en mémoire (record, tableau de record) et faire du procédural
 
-### SRP
-
-Hors de la BDD, pour appliquer les RG dans une couche dédiée, il faut :
-
-- lire
-- appliquer les RG
-- écrire
+## Migrer le code procédural
 
 Si on prend cette version SQL
 
@@ -89,23 +83,6 @@ WHERE 1=1
     AND country = 'France'
     AND creation_date > NOW - INTERVAL '10 years'
     AND type = 'physical'
-```
-
-On peut l'écrire en JS ainsi
-
-```js
-const users = await knex
-    .select('id', 'creation_date', 'status')
-    .from('users')
-    .where({
-        country: 'France'
-    });
-
-const archivedUsers = doSomething(users);
-
-archivedUsers.map(async (user) => {
-    await knex('users').where({id: user.id}).update('status', 'archived');
-});
 ```
 
 Si on veut sortir ce code de la BDD, on peut toujours écrire ça.
@@ -133,10 +110,42 @@ await knex('users')
     .update('status', 'archived');
 ```
 
-Exemple:
-
+Voyons maintenant du code de production.
 - à partir [d'une procédure stockée Oracle](./assets/source/integration-propositions.sql) open-source
 - en faire [une version procédurale en Js](./assets/parcoursup-js/src/integration-propositions.js)
+
+
+## SRP et archi hexa
+
+Hors de la BDD, pour appliquer les RG dans une couche dédiée, il faut :
+
+- lire
+- appliquer les RG
+- écrire
+
+Mais ce qu'on veut vraiment, c'est l'écrire en JS ainsi
+
+```js
+const users = await knex
+    .select('id', 'creation_date', 'status')
+    .from('users')
+    .where({
+        country: 'France'
+    });
+
+const archivedUsers = doSomething(users);
+
+archivedUsers.map(async (user) => {
+    await knex('users').where({id: user.id}).update('status', 'archived');
+});
+```
+
+Le but est d'extraire les RG dans une autre couche, et donc d'appauvrir le code SQL original.
+
+Ajouter GildedRose SQL
+
+
+## Clean code
 
 Mettre en avant :
 
@@ -144,6 +153,12 @@ Mettre en avant :
 - les commentaires;
 - profiter du nommage pas métier des propriétés;
 - l'encodage de type dans du texte.
+
+## Tester
+
+Plus difficile qu'on ne le croit, à cause de la BDD
+
+https://github.com/GradedJestRisk/web-log/blob/main/Automated-testing-database.md
 
 ## Annexes
 
