@@ -78,7 +78,29 @@ https://blog.octo.com/la-memoire-subversive-de-nos-systemes-legacy
 > L'IA modifie cette dynamique. Rétro-documentation, explication de code legacy, reconstitution d'intentions implicites. Ce qui demandait des jours peut aujourd'hui s'amorcer en très peu de temps. Elle ne résout pas tout : elle peut se tromper sur l'intention d'un code, et ses réponses restent à valider.
 
 
+## Orienté-objet
+
+L'orienté-objet n'est pas la solution à tous les problèmes.
+Il est utile pour maitriser la complexité essentielle, mais peut lui-même apporter de la complexité accidentelle.
+
+Qu'est-ce que l'OOP :
+
+- Héritage
+- Polymorphisme
+- grouper données et le comportement (RG) = encapsulation
+- message passing (Smalltalk)
+
 ## Annexes
+
+### OOP
+
+https://loup-vaillant.fr/articles/deaths-of-oop
+
+
+
+### dette technique
+
+https://blog.octo.com/en-finir-avec-la-dette-technique
 
 ### what is actually a program
 

@@ -2,7 +2,7 @@
 
 [](https://blog.octo.com/apple-sauce)
 
-De grands espoirs sont placés dans les grands modèles de langage. Les jours sont comptés pour les ouvrages écrits dans des langues passées de mode. Demain, ces ouvrages seront disponibles, sans traducteurs, dans la langue que tout le monde parle ! Cette promesse a-t-elle une chance d'être tenue ?
+De grands espoirs sont placés dans les grands modèles de langage. Les jours sont comptés pour les langues passées de mode. Demain, tous les ouvrages seront traduits dans la langue que tout le monde parle aujourd'hui ! Cette promesse a-t-elle une chance d'être tenue, sur les applications composées de procédures stockées comme le PL/SQL ?
 
 350 caractères maximum
 

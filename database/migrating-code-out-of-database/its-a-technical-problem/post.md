@@ -11,8 +11,10 @@ Pourquoi migrer les procédures "stockées en base de données" (PL/SQL, inclus 
 mainstream ? Est-ce que la promesse faite par les LLM d'automatiser cette migration change fondamentalement la donne ?
 La réponse dépend de l'objectif de cette migration.
 
-Si l'objectif est uniquement de changer de langage, le problème est relativement simple : il s'agit de transpiler
-depuis un langage procédural. Pas besoin en théorie de LLM pour cela.
+Si l'objectif est uniquement de changer de langage, le problème est relativement simple et connu : il s'agit de transpiler
+depuis un langage procédural. Pas besoin en théorie de LLM pour cela. 
+
+Mais si votre objectif va au-delà, je vous invite à attendre le prochain article.
 
 ## Pourquoi migrer
 
@@ -22,38 +24,26 @@ Voilà un premier groupe d'objectifs :
 - recruter plus facilement ou ne pas devoir former les développeurs ;
 - s'assurer que le langage sera maintenu.
 
-Ces objectifs sont bien définis, assez facilement évaluables (x € de licences par an) et vérifiables après coup.
-Que certains les appellent "exigences non fonctionnelles" (NFR) formalisées danns une "stratégie d'entreprise", ou que
-d'autres les appellent "dette technique", comme chez [The fork](), n'est pas important ici.
+Ces objectifs sont bien définis, assez facilement évaluables (ex : x € de licences par an) et vérifiables après coup.
+Que certains les appellent "exigences non fonctionnelles" (NFR) et qu'elles soient formalisées dans un document nommé "stratégie d'entreprise", ou que d'autres les appellent "dette technique" et les gèrent dans une application dédiée, comme chez [The fork](https://medium.com/thefork/a-proposal-methodology-for-managing-technical-debt-d208201c33df#7548), n'est le sujet ici.
 
-Pour savoir si la migration sera plus rapide avec un LLM et si ces deux groupes d'objectifs seront remplis, il nous
-faudra nous frotter à de la technique : en quoi ce langage est-il différent des autres ? Êtes-vous prêts à plonger ?
+Dans cet article, je vous propose de se limiter à ces objectifs ; d'autres objectifs seront traités dans l'article suivant.
+Pour savoir si la migration sera plus rapide avec un LLM, il nous faudra nous frotter à du langage, à du code : êtes-vous prêts à plonger ? Vous serez en bonne compagnie : j'ai développé dans ce langage les dix premières années de ma vie professionnelle, puis je suis passé sur les huit dernières au Java/Js en [hexa/clean architecture](https://blog.octo.com/architecture-hexagonale-trois-principes-et-un-exemple-dimplementation). 
+
+## Présenter le PL/SQL
+
+Si un développeur junior était confronté pour la première fois aux procédures stockées, il perdrait ses repères car :
+- le langage est procédural — or, il n'a probablement pas fait de C ou de Pascal;
+- le programme n'est exécutable qu'en base de données — or, il est habitué à exécuter son programme en dehors;
+- la base de données Oracle est propriétaire, et les environnements sont distants — or, il est habitué à exécuter une base open-source, comme PostgreSQL, en local ;
+- la codebase ne contient aucun test automatisé — or, il est habitué, faute de tests unitaires, à des tests de bout-en-bout ;
+- les programmes sont "en traitement par lot", en mode batch (exécutés par un ordonnanceur, traite un ensemble de donnés) — or, il est habitué à réagir à des appels REST et à traiter peu de données.
+
+Ce développeur ne serait pas étonné par le SQL, qu'il connaît, et lirait assez facilement les programmes. 
 
 
-## Idées
+Les familiers du Gilded rose comprendront très facilement [cette version PL/SQL](https://github.com/emilybache/GildedRose-Refactoring-Kata/blob/main/plsql/update_quality.sql), pour la simple raison que ce kata est essentiellement procédural.
 
-C'est pas l'implémentation qui pose problème, c'est le test.
-
-C'est pas l'implémentation qui pose problème, c'est l'intention.
-
-C'est pas le procédural qui pose problème, c'est le batch.
-
-C'est pas le procédural qui pose problème à la traduction: on peut utiliser un parseur/codemod.
-
-
-## Orienté-objet
-
-L'orienté-objet n'est pas la solution à tous les problèmes.
-Il est utile pour maitriser la complexité essentielle, mais peut lui-même apporter de la complexité accidentelle.
-
-Qu'est-ce que l'OOP :
-
-- Héritage
-- Polymorphisme
-- grouper données et le comportement (RG) = encapsulation
-- message passing (Smalltalk)
-
-## PL/SQL
 
 Ce qu'il y a :
 
@@ -110,9 +100,23 @@ await knex('users')
     .update('status', 'archived');
 ```
 
+## Un cas réel
+
 Voyons maintenant du code de production.
-- à partir [d'une procédure stockée Oracle](./assets/source/integration-propositions.sql) open-source
+- à partir [d'une procédure stockée Oracle](assets/parcoursup-plsql/integration-propositions.sql) open-source
 - en faire [une version procédurale en Js](./assets/parcoursup-js/src/integration-propositions.js)
+
+
+## Transpiler
+
+https://public.dalibo.com/formations/manuels_archives/migorpg/migorpg.handout.pdf
+
+## Tester
+
+Plus difficile qu'on ne le croit, à cause de la BDD
+
+https://github.com/GradedJestRisk/web-log/blob/main/Automated-testing-database.md
+
 
 
 ## SRP et archi hexa
@@ -145,6 +149,7 @@ Le but est d'extraire les RG dans une autre couche, et donc d'appauvrir le code 
 Ajouter GildedRose SQL
 
 
+
 ## Clean code
 
 Mettre en avant :
@@ -154,37 +159,12 @@ Mettre en avant :
 - profiter du nommage pas métier des propriétés;
 - l'encodage de type dans du texte.
 
-## Tester
+## Idées
 
-Plus difficile qu'on ne le croit, à cause de la BDD
+C'est pas l'implémentation qui pose problème, c'est le test.
 
-https://github.com/GradedJestRisk/web-log/blob/main/Automated-testing-database.md
+C'est pas l'implémentation qui pose problème, c'est l'intention.
 
-## Annexes
+C'est pas le procédural qui pose problème, c'est le batch.
 
-### technical debt
-
-[The fork](https://medium.com/thefork/a-proposal-methodology-for-managing-technical-debt-d208201c33df#7548).
-
-> a backend technical component MUST be based on the latest LTS version of Node.js
-
-[Technical debt](https://ncrafts.io/speaker/nicholassuter)
-
-### codebase 
-MDD
-https://gitlab.mim-libre.fr/parcoursup/algorithmes-de-parcoursup/-/blob/master/db-setup/oracle/create-schema.sql?ref_type=heads
-
-https://gitlab.mim-libre.fr/parcoursup/algorithmes-de-parcoursup/-/blob/master/src/main/plsql/propositions/11%20-%20Integration%20propositions.sql?ref_type=heads
-
-### testing
-
-https://github.com/GradedJestRisk/web-log/blob/main/Automated-testing-database.md
-
-### transpiling
-
-https://public.dalibo.com/formations/manuels_archives/migorpg/migorpg.handout.pdf
-
-
-### OOP
-
-https://loup-vaillant.fr/articles/deaths-of-oop
+C'est pas le procédural qui pose problème à la traduction: on peut utiliser un parseur/codemod.
