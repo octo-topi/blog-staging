@@ -1,9 +1,6 @@
 # Sortir le code de la base de données: it's a people's problem
 
-> The Second Law of Consulting:
-> No matter how it looks at first, it’s always a people problem.
 
-Gerald Weinberg, The secrets of consulting 
 
 ## TL,DR
 
