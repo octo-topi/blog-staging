@@ -1,0 +1,17 @@
+services:
+  postgresql:
+    image:
+      postgres:18
+    ports:
+      - "5400:5432"
+    command: docker-entrypoint.sh -c listen_addresses='*'
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: database
+    healthcheck:
+      test: "psql --dbname \"host=localhost port=5432 dbname=database user=user password=password\""
+      start_period: 5s
+      interval: 2s
+      timeout: 2s
+      retries: 5
